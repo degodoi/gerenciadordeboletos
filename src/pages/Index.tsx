@@ -4,9 +4,17 @@ import { BoletoList } from "@/components/BoletoList";
 
 const Index = () => {
   const [boletos, setBoletos] = useState<Boleto[]>([]);
+  const [editingBoleto, setEditingBoleto] = useState<Boleto | null>(null);
 
   const handleSubmit = (novoBoleto: Boleto) => {
-    setBoletos((prev) => [novoBoleto, ...prev]);
+    if (editingBoleto) {
+      setBoletos((prev) =>
+        prev.map((boleto) => (boleto.id === editingBoleto.id ? novoBoleto : boleto))
+      );
+      setEditingBoleto(null);
+    } else {
+      setBoletos((prev) => [novoBoleto, ...prev]);
+    }
   };
 
   const handleParcelaPaga = (boletoId: string, parcelaIndex: number) => {
@@ -25,6 +33,10 @@ const Index = () => {
     );
   };
 
+  const handleEdit = (boleto: Boleto) => {
+    setEditingBoleto(boleto);
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="mx-auto max-w-5xl space-y-8">
@@ -33,18 +45,22 @@ const Index = () => {
             Controle de Boletos
           </h1>
           <p className="text-muted-foreground">
-            Cadastre e gerencie seus boletos de forma simples e rápida
+            {editingBoleto ? "Editar boleto" : "Cadastre e gerencie seus boletos de forma simples e rápida"}
           </p>
         </div>
 
         <div className="rounded-lg border bg-card p-6">
-          <BoletoForm onSubmit={handleSubmit} />
+          <BoletoForm onSubmit={handleSubmit} initialData={editingBoleto} />
         </div>
 
         {boletos.length > 0 && (
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">Boletos Cadastrados</h2>
-            <BoletoList boletos={boletos} onParcelaPaga={handleParcelaPaga} />
+            <BoletoList 
+              boletos={boletos} 
+              onParcelaPaga={handleParcelaPaga} 
+              onEdit={handleEdit}
+            />
           </div>
         )}
       </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { toast } from "sonner";
 
 interface BoletoFormProps {
   onSubmit: (boleto: Boleto) => void;
+  initialData?: Boleto | null;
 }
 
 export interface Parcela {
@@ -35,13 +36,24 @@ export interface Boleto {
   parcelasInfo: Parcela[];
 }
 
-export function BoletoForm({ onSubmit }: BoletoFormProps) {
+export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
   const [nome, setNome] = useState("");
   const [valorTotal, setValorTotal] = useState("");
   const [entrada, setEntrada] = useState("");
   const [tipoPagamentoEntrada, setTipoPagamentoEntrada] = useState("");
   const [parcelas, setParcelas] = useState("");
   const [tipoPagamento, setTipoPagamento] = useState("");
+
+  useEffect(() => {
+    if (initialData) {
+      setNome(initialData.nome);
+      setValorTotal(initialData.valorTotal.toString());
+      setEntrada(initialData.entrada.toString());
+      setTipoPagamentoEntrada(initialData.tipoPagamentoEntrada);
+      setParcelas(initialData.parcelas.toString());
+      setTipoPagamento(initialData.tipoPagamento);
+    }
+  }, [initialData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,12 +83,13 @@ export function BoletoForm({ onSubmit }: BoletoFormProps) {
     const parcelasInfo: Parcela[] = Array.from({ length: parcelasNum }, (_, index) => ({
       numero: index + 1,
       valor: valorParcela,
-      paga: false,
-      dataVencimento: new Date(new Date().setMonth(new Date().getMonth() + index + 1)),
+      paga: initialData?.parcelasInfo[index]?.paga || false,
+      dataVencimento: initialData?.parcelasInfo[index]?.dataVencimento || 
+        new Date(new Date().setMonth(new Date().getMonth() + index + 1)),
     }));
 
     const novoBoleto: Boleto = {
-      id: crypto.randomUUID(),
+      id: initialData?.id || crypto.randomUUID(),
       nome,
       valorTotal: valorTotalNum,
       entrada: entradaNum,
@@ -84,22 +97,24 @@ export function BoletoForm({ onSubmit }: BoletoFormProps) {
       parcelas: parcelasNum,
       tipoPagamento,
       valorParcela,
-      dataCadastro: new Date(),
+      dataCadastro: initialData?.dataCadastro || new Date(),
       parcelasInfo,
     };
 
     onSubmit(novoBoleto);
-    toast.success("Boleto cadastrado com sucesso!", {
+    toast.success(initialData ? "Boleto atualizado com sucesso!" : "Boleto cadastrado com sucesso!", {
       duration: 3000,
     });
 
-    // Limpar formulário
-    setNome("");
-    setValorTotal("");
-    setEntrada("");
-    setTipoPagamentoEntrada("");
-    setParcelas("");
-    setTipoPagamento("");
+    if (!initialData) {
+      // Limpar formulário apenas se não estiver editando
+      setNome("");
+      setValorTotal("");
+      setEntrada("");
+      setTipoPagamentoEntrada("");
+      setParcelas("");
+      setTipoPagamento("");
+    }
   };
 
   return (

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -11,17 +11,23 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatarMoeda } from "@/lib/utils";
 import type { Boleto } from "./BoletoForm";
-import { format } from "date-fns";
+import { format, isAfter, isBefore, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { Edit, AlertTriangle } from "lucide-react";
 
 interface BoletoListProps {
   boletos: Boleto[];
   onParcelaPaga: (boletoId: string, parcelaIndex: number) => void;
+  onEdit: (boleto: Boleto) => void;
 }
 
-export function BoletoList({ boletos, onParcelaPaga }: BoletoListProps) {
+export function BoletoList({ boletos, onParcelaPaga, onEdit }: BoletoListProps) {
   const [expandedBoleto, setExpandedBoleto] = useState<string | null>(null);
+
+  useEffect(() => {
+    checkOverduePayments();
+  }, [boletos]);
 
   const toggleBoleto = (boletoId: string) => {
     setExpandedBoleto(expandedBoleto === boletoId ? null : boletoId);
@@ -32,6 +38,42 @@ export function BoletoList({ boletos, onParcelaPaga }: BoletoListProps) {
     toast.success(`Parcela ${parcelaIndex + 1} atualizada com sucesso!`, {
       duration: 3000,
     });
+  };
+
+  const checkOverduePayments = () => {
+    const today = new Date();
+    const sevenDaysFromNow = addDays(today, 7);
+
+    boletos.forEach(boleto => {
+      boleto.parcelasInfo.forEach((parcela, index) => {
+        if (!parcela.paga) {
+          if (isBefore(parcela.dataVencimento, today)) {
+            toast.error(`Parcela ${index + 1} do boleto de ${boleto.nome} está vencida!`, {
+              duration: 5000,
+              icon: <AlertTriangle className="h-5 w-5 text-red-500" />,
+            });
+          } else if (isBefore(parcela.dataVencimento, sevenDaysFromNow)) {
+            toast.warning(`Parcela ${index + 1} do boleto de ${boleto.nome} vence em breve!`, {
+              duration: 5000,
+            });
+          }
+        }
+      });
+    });
+  };
+
+  const getParcelaStatusColor = (parcela: { dataVencimento: Date; paga: boolean }) => {
+    const today = new Date();
+    if (parcela.paga) {
+      return "bg-green-100 border-green-200";
+    }
+    if (isBefore(parcela.dataVencimento, today)) {
+      return "bg-red-100 border-red-200";
+    }
+    if (isBefore(parcela.dataVencimento, addDays(today, 7))) {
+      return "bg-yellow-100 border-yellow-200";
+    }
+    return "bg-white border-gray-200";
   };
 
   return (
@@ -46,7 +88,7 @@ export function BoletoList({ boletos, onParcelaPaga }: BoletoListProps) {
             <TableHead className="text-right">Parcelas</TableHead>
             <TableHead className="text-right">Valor Parcela</TableHead>
             <TableHead>Pgto. Parcelas</TableHead>
-            <TableHead></TableHead>
+            <TableHead>Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -67,13 +109,22 @@ export function BoletoList({ boletos, onParcelaPaga }: BoletoListProps) {
                 </TableCell>
                 <TableCell className="capitalize">{boleto.tipoPagamento}</TableCell>
                 <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleBoleto(boleto.id)}
-                  >
-                    {expandedBoleto === boleto.id ? "Ocultar" : "Ver Parcelas"}
-                  </Button>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleBoleto(boleto.id)}
+                    >
+                      {expandedBoleto === boleto.id ? "Ocultar" : "Ver Parcelas"}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEdit(boleto)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
               {expandedBoleto === boleto.id && (
@@ -85,7 +136,7 @@ export function BoletoList({ boletos, onParcelaPaga }: BoletoListProps) {
                         {boleto.parcelasInfo.map((parcela, index) => (
                           <div
                             key={index}
-                            className="flex items-center justify-between p-2 bg-background rounded-lg shadow-sm"
+                            className={`flex items-center justify-between p-2 rounded-lg border ${getParcelaStatusColor(parcela)}`}
                           >
                             <div>
                               <span className="font-medium">
