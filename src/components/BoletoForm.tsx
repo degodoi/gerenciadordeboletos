@@ -76,8 +76,15 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
       return;
     }
 
+    if (parcelasNum <= 0) {
+      toast.error("O número de parcelas deve ser maior que zero", {
+        duration: 3000,
+      });
+      return;
+    }
+
     const valorRestante = valorTotalNum - entradaNum;
-    const valorParcela = parcelasNum > 0 ? valorRestante / parcelasNum : 0;
+    const valorParcela = Number((valorRestante / parcelasNum).toFixed(2));
 
     // Criar array de parcelas
     const parcelasInfo: Parcela[] = Array.from({ length: parcelasNum }, (_, index) => ({
