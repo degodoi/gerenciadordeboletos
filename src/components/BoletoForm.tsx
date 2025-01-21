@@ -47,21 +47,25 @@ export function BoletoForm({ onSubmit }: BoletoFormProps) {
     e.preventDefault();
 
     const valorTotalNum = parseFloat(valorTotal);
-    const entradaNum = parseFloat(entrada);
+    const entradaNum = parseFloat(entrada) || 0;
     const parcelasNum = parseInt(parcelas);
 
     if (!nome || !valorTotal || !parcelas || !tipoPagamento || !tipoPagamentoEntrada) {
-      toast.error("Por favor, preencha todos os campos obrigatórios");
+      toast.error("Por favor, preencha todos os campos obrigatórios", {
+        duration: 3000,
+      });
       return;
     }
 
     if (entradaNum > valorTotalNum) {
-      toast.error("O valor da entrada não pode ser maior que o valor total");
+      toast.error("O valor da entrada não pode ser maior que o valor total", {
+        duration: 3000,
+      });
       return;
     }
 
-    const valorRestante = valorTotalNum - (entradaNum || 0);
-    const valorParcela = valorRestante / parcelasNum;
+    const valorRestante = valorTotalNum - entradaNum;
+    const valorParcela = parcelasNum > 0 ? valorRestante / parcelasNum : 0;
 
     // Criar array de parcelas
     const parcelasInfo: Parcela[] = Array.from({ length: parcelasNum }, (_, index) => ({
@@ -75,7 +79,7 @@ export function BoletoForm({ onSubmit }: BoletoFormProps) {
       id: crypto.randomUUID(),
       nome,
       valorTotal: valorTotalNum,
-      entrada: entradaNum || 0,
+      entrada: entradaNum,
       tipoPagamentoEntrada,
       parcelas: parcelasNum,
       tipoPagamento,
@@ -85,7 +89,9 @@ export function BoletoForm({ onSubmit }: BoletoFormProps) {
     };
 
     onSubmit(novoBoleto);
-    toast.success("Boleto cadastrado com sucesso!");
+    toast.success("Boleto cadastrado com sucesso!", {
+      duration: 3000,
+    });
 
     // Limpar formulário
     setNome("");

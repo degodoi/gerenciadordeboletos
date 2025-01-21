@@ -13,12 +13,14 @@ import type { Boleto } from "./BoletoForm";
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 interface BoletoListProps {
   boletos: Boleto[];
+  onParcelaPaga: (boletoId: string, parcelaIndex: number) => void;
 }
 
-export function BoletoList({ boletos }: BoletoListProps) {
+export function BoletoList({ boletos, onParcelaPaga }: BoletoListProps) {
   const [expandedBoleto, setExpandedBoleto] = useState<string | null>(null);
 
   const toggleBoleto = (boletoId: string) => {
@@ -26,9 +28,10 @@ export function BoletoList({ boletos }: BoletoListProps) {
   };
 
   const handleParcelaPaga = (boletoId: string, parcelaIndex: number) => {
-    // Aqui você pode implementar a lógica para salvar o estado da parcela
-    // Por enquanto, apenas mostramos um console.log
-    console.log(`Parcela ${parcelaIndex + 1} do boleto ${boletoId} marcada como paga`);
+    onParcelaPaga(boletoId, parcelaIndex);
+    toast.success(`Parcela ${parcelaIndex + 1} atualizada com sucesso!`, {
+      duration: 3000,
+    });
   };
 
   return (
@@ -48,8 +51,8 @@ export function BoletoList({ boletos }: BoletoListProps) {
         </TableHeader>
         <TableBody>
           {boletos.map((boleto) => (
-            <>
-              <TableRow key={boleto.id} className="slide-in">
+            <React.Fragment key={boleto.id}>
+              <TableRow className="slide-in">
                 <TableCell className="font-medium">{boleto.nome}</TableCell>
                 <TableCell className="text-right">
                   {formatarMoeda(boleto.valorTotal)}
@@ -120,7 +123,7 @@ export function BoletoList({ boletos }: BoletoListProps) {
                   </TableCell>
                 </TableRow>
               )}
-            </>
+            </React.Fragment>
           ))}
         </TableBody>
       </Table>

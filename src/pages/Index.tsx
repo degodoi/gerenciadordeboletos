@@ -9,6 +9,22 @@ const Index = () => {
     setBoletos((prev) => [novoBoleto, ...prev]);
   };
 
+  const handleParcelaPaga = (boletoId: string, parcelaIndex: number) => {
+    setBoletos((prevBoletos) =>
+      prevBoletos.map((boleto) => {
+        if (boleto.id === boletoId) {
+          const novasParcelasInfo = [...boleto.parcelasInfo];
+          novasParcelasInfo[parcelaIndex] = {
+            ...novasParcelasInfo[parcelaIndex],
+            paga: !novasParcelasInfo[parcelaIndex].paga,
+          };
+          return { ...boleto, parcelasInfo: novasParcelasInfo };
+        }
+        return boleto;
+      })
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="mx-auto max-w-5xl space-y-8">
@@ -28,7 +44,7 @@ const Index = () => {
         {boletos.length > 0 && (
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">Boletos Cadastrados</h2>
-            <BoletoList boletos={boletos} />
+            <BoletoList boletos={boletos} onParcelaPaga={handleParcelaPaga} />
           </div>
         )}
       </div>
