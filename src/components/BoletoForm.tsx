@@ -15,21 +15,31 @@ interface BoletoFormProps {
   onSubmit: (boleto: Boleto) => void;
 }
 
+export interface Parcela {
+  numero: number;
+  valor: number;
+  paga: boolean;
+  dataVencimento: Date;
+}
+
 export interface Boleto {
   id: string;
   nome: string;
   valorTotal: number;
   entrada: number;
+  tipoPagamentoEntrada: string;
   parcelas: number;
   tipoPagamento: string;
   valorParcela: number;
   dataCadastro: Date;
+  parcelasInfo: Parcela[];
 }
 
 export function BoletoForm({ onSubmit }: BoletoFormProps) {
   const [nome, setNome] = useState("");
   const [valorTotal, setValorTotal] = useState("");
   const [entrada, setEntrada] = useState("");
+  const [tipoPagamentoEntrada, setTipoPagamentoEntrada] = useState("");
   const [parcelas, setParcelas] = useState("");
   const [tipoPagamento, setTipoPagamento] = useState("");
 
@@ -40,7 +50,7 @@ export function BoletoForm({ onSubmit }: BoletoFormProps) {
     const entradaNum = parseFloat(entrada);
     const parcelasNum = parseInt(parcelas);
 
-    if (!nome || !valorTotal || !parcelas || !tipoPagamento) {
+    if (!nome || !valorTotal || !parcelas || !tipoPagamento || !tipoPagamentoEntrada) {
       toast.error("Por favor, preencha todos os campos obrigatórios");
       return;
     }
@@ -53,15 +63,25 @@ export function BoletoForm({ onSubmit }: BoletoFormProps) {
     const valorRestante = valorTotalNum - (entradaNum || 0);
     const valorParcela = valorRestante / parcelasNum;
 
+    // Criar array de parcelas
+    const parcelasInfo: Parcela[] = Array.from({ length: parcelasNum }, (_, index) => ({
+      numero: index + 1,
+      valor: valorParcela,
+      paga: false,
+      dataVencimento: new Date(new Date().setMonth(new Date().getMonth() + index + 1)),
+    }));
+
     const novoBoleto: Boleto = {
       id: crypto.randomUUID(),
       nome,
       valorTotal: valorTotalNum,
       entrada: entradaNum || 0,
+      tipoPagamentoEntrada,
       parcelas: parcelasNum,
       tipoPagamento,
       valorParcela,
       dataCadastro: new Date(),
+      parcelasInfo,
     };
 
     onSubmit(novoBoleto);
@@ -71,6 +91,7 @@ export function BoletoForm({ onSubmit }: BoletoFormProps) {
     setNome("");
     setValorTotal("");
     setEntrada("");
+    setTipoPagamentoEntrada("");
     setParcelas("");
     setTipoPagamento("");
   };
@@ -117,20 +138,8 @@ export function BoletoForm({ onSubmit }: BoletoFormProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="parcelas">Número de Parcelas</Label>
-          <Input
-            id="parcelas"
-            type="number"
-            min="1"
-            placeholder="Digite o número de parcelas"
-            value={parcelas}
-            onChange={(e) => setParcelas(e.target.value)}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="tipoPagamento">Tipo de Pagamento</Label>
-          <Select value={tipoPagamento} onValueChange={setTipoPagamento}>
+          <Label htmlFor="tipoPagamentoEntrada">Forma de Pagamento da Entrada</Label>
+          <Select value={tipoPagamentoEntrada} onValueChange={setTipoPagamentoEntrada}>
             <SelectTrigger>
               <SelectValue placeholder="Selecione o tipo de pagamento" />
             </SelectTrigger>
@@ -142,6 +151,33 @@ export function BoletoForm({ onSubmit }: BoletoFormProps) {
             </SelectContent>
           </Select>
         </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="parcelas">Número de Parcelas</Label>
+          <Input
+            id="parcelas"
+            type="number"
+            min="1"
+            placeholder="Digite o número de parcelas"
+            value={parcelas}
+            onChange={(e) => setParcelas(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="tipoPagamento">Tipo de Pagamento das Parcelas</Label>
+        <Select value={tipoPagamento} onValueChange={setTipoPagamento}>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione o tipo de pagamento" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pix">PIX</SelectItem>
+            <SelectItem value="dinheiro">Dinheiro</SelectItem>
+            <SelectItem value="cartao">Cartão</SelectItem>
+            <SelectItem value="boleto">Boleto</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Button type="submit" className="w-full">
