@@ -1,11 +1,36 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { BoletoForm, type Boleto } from "@/components/BoletoForm";
+import { BoletoList } from "@/components/BoletoList";
 
 const Index = () => {
+  const [boletos, setBoletos] = useState<Boleto[]>([]);
+
+  const handleSubmit = (novoBoleto: Boleto) => {
+    setBoletos((prev) => [novoBoleto, ...prev]);
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-background p-6">
+      <div className="mx-auto max-w-5xl space-y-8">
+        <div className="space-y-2 text-center">
+          <h1 className="text-3xl font-bold tracking-tight">
+            Controle de Boletos
+          </h1>
+          <p className="text-muted-foreground">
+            Cadastre e gerencie seus boletos de forma simples e rápida
+          </p>
+        </div>
+
+        <div className="rounded-lg border bg-card p-6">
+          <BoletoForm onSubmit={handleSubmit} />
+        </div>
+
+        {boletos.length > 0 && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Boletos Cadastrados</h2>
+            <BoletoList boletos={boletos} />
+          </div>
+        )}
       </div>
     </div>
   );
