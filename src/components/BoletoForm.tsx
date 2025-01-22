@@ -85,10 +85,19 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
 
     const valorRestante = valorTotalNum - entradaNum;
     const valorParcelaExato = valorRestante / parcelasNum;
+
+    // Verificação da precisão do cálculo
+    const somaTotal = (valorParcelaExato * parcelasNum) + entradaNum;
+    if (Math.abs(somaTotal - valorTotalNum) > 0.01) {
+      toast.error("Erro no cálculo das parcelas. Por favor, verifique os valores.", {
+        duration: 2000,
+      });
+      return;
+    }
     
     const parcelasInfo: Parcela[] = Array.from({ length: parcelasNum }, (_, index) => ({
       numero: index + 1,
-      valor: Number(valorParcelaExato.toFixed(2)),
+      valor: valorParcelaExato,
       paga: initialData?.parcelasInfo[index]?.paga || false,
       dataVencimento: initialData?.parcelasInfo[index]?.dataVencimento || 
         new Date(new Date().setMonth(new Date().getMonth() + index + 1)),
@@ -102,7 +111,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
       tipoPagamentoEntrada,
       parcelas: parcelasNum,
       tipoPagamento,
-      valorParcela: Number(valorParcelaExato.toFixed(2)),
+      valorParcela: valorParcelaExato,
       dataCadastro: initialData?.dataCadastro || new Date(),
       parcelasInfo,
     };
