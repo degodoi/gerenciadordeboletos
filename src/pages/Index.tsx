@@ -38,8 +38,8 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="mx-auto max-w-5xl space-y-8">
+    <div className="min-h-screen bg-background p-4 md:p-6">
+      <div className="mx-auto max-w-6xl space-y-6">
         <div className="space-y-2 text-center">
           <h1 className="text-3xl font-bold tracking-tight">
             Controle de Boletos
@@ -49,7 +49,7 @@ const Index = () => {
           </p>
         </div>
 
-        <div className="rounded-lg border bg-card p-6">
+        <div className="rounded-lg border bg-card p-4 md:p-6">
           <BoletoForm onSubmit={handleSubmit} initialData={editingBoleto} />
         </div>
 

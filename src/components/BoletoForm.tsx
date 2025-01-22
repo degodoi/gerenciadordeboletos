@@ -64,27 +64,28 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
 
     if (!nome || !valorTotal || !parcelas || !tipoPagamento || !tipoPagamentoEntrada) {
       toast.error("Por favor, preencha todos os campos obrigatórios", {
-        duration: 3000,
+        duration: 2000,
       });
       return;
     }
 
     if (entradaNum > valorTotalNum) {
       toast.error("O valor da entrada não pode ser maior que o valor total", {
-        duration: 3000,
+        duration: 2000,
       });
       return;
     }
 
     if (parcelasNum <= 0) {
       toast.error("O número de parcelas deve ser maior que zero", {
-        duration: 3000,
+        duration: 2000,
       });
       return;
     }
 
     const valorRestante = valorTotalNum - entradaNum;
-    const valorParcela = Number((valorRestante / parcelasNum).toFixed(2));
+    const valorParcelaCalculado = valorRestante / parcelasNum;
+    const valorParcela = Number(valorParcelaCalculado.toFixed(2));
 
     // Criar array de parcelas
     const parcelasInfo: Parcela[] = Array.from({ length: parcelasNum }, (_, index) => ({
@@ -110,11 +111,10 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
 
     onSubmit(novoBoleto);
     toast.success(initialData ? "Boleto atualizado com sucesso!" : "Boleto cadastrado com sucesso!", {
-      duration: 3000,
+      duration: 2000,
     });
 
     if (!initialData) {
-      // Limpar formulário apenas se não estiver editando
       setNome("");
       setValorTotal("");
       setEntrada("");
@@ -125,7 +125,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 fade-in">
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-3xl mx-auto fade-in">
       <div className="space-y-2">
         <Label htmlFor="nome">Nome do Cliente</Label>
         <Input
@@ -133,6 +133,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
           placeholder="Digite o nome do cliente"
           value={nome}
           onChange={(e) => setNome(e.target.value)}
+          className="max-w-xl"
         />
       </div>
 
@@ -147,6 +148,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
             placeholder="0,00"
             value={valorTotal}
             onChange={(e) => setValorTotal(e.target.value)}
+            className="max-w-[200px]"
           />
         </div>
 
@@ -160,6 +162,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
             placeholder="0,00"
             value={entrada}
             onChange={(e) => setEntrada(e.target.value)}
+            className="max-w-[200px]"
           />
         </div>
       </div>
@@ -168,8 +171,8 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
         <div className="space-y-2">
           <Label htmlFor="tipoPagamentoEntrada">Forma de Pagamento da Entrada</Label>
           <Select value={tipoPagamentoEntrada} onValueChange={setTipoPagamentoEntrada}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o tipo de pagamento" />
+            <SelectTrigger className="max-w-[200px]">
+              <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="pix">PIX</SelectItem>
@@ -189,6 +192,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
             placeholder="Digite o número de parcelas"
             value={parcelas}
             onChange={(e) => setParcelas(e.target.value)}
+            className="max-w-[200px]"
           />
         </div>
       </div>
@@ -196,8 +200,8 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
       <div className="space-y-2">
         <Label htmlFor="tipoPagamento">Tipo de Pagamento das Parcelas</Label>
         <Select value={tipoPagamento} onValueChange={setTipoPagamento}>
-          <SelectTrigger>
-            <SelectValue placeholder="Selecione o tipo de pagamento" />
+          <SelectTrigger className="max-w-[200px]">
+            <SelectValue placeholder="Selecione" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="pix">PIX</SelectItem>
@@ -208,8 +212,8 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
         </Select>
       </div>
 
-      <Button type="submit" className="w-full">
-        Cadastrar Boleto
+      <Button type="submit" className="w-full md:w-auto">
+        {initialData ? "Atualizar" : "Cadastrar"} Boleto
       </Button>
     </form>
   );
