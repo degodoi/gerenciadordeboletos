@@ -84,16 +84,11 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
     }
 
     const valorRestante = valorTotalNum - entradaNum;
-    
-    // Cálculo preciso das parcelas
     const valorParcelaExato = valorRestante / parcelasNum;
-    const valorParcelaNormal = Math.floor(valorParcelaExato * 100) / 100; // Arredonda para baixo
-    const totalParcelasNormal = valorParcelaNormal * (parcelasNum - 1);
-    const ultimaParcela = Number((valorRestante - totalParcelasNormal).toFixed(2));
     
     const parcelasInfo: Parcela[] = Array.from({ length: parcelasNum }, (_, index) => ({
       numero: index + 1,
-      valor: index === parcelasNum - 1 ? ultimaParcela : valorParcelaNormal,
+      valor: Number(valorParcelaExato.toFixed(2)),
       paga: initialData?.parcelasInfo[index]?.paga || false,
       dataVencimento: initialData?.parcelasInfo[index]?.dataVencimento || 
         new Date(new Date().setMonth(new Date().getMonth() + index + 1)),
@@ -107,7 +102,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
       tipoPagamentoEntrada,
       parcelas: parcelasNum,
       tipoPagamento,
-      valorParcela: valorParcelaNormal,
+      valorParcela: Number(valorParcelaExato.toFixed(2)),
       dataCadastro: initialData?.dataCadastro || new Date(),
       parcelasInfo,
     };
@@ -128,19 +123,18 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-xl mx-auto fade-in">
-      <div className="space-y-2">
-        <Label htmlFor="nome">Nome do Cliente</Label>
-        <Input
-          id="nome"
-          placeholder="Digite o nome do cliente"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          className="max-w-lg"
-        />
-      </div>
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto fade-in">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="space-y-2">
+          <Label htmlFor="nome">Nome do Cliente</Label>
+          <Input
+            id="nome"
+            placeholder="Digite o nome do cliente"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+          />
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="valorTotal">Valor Total (R$)</Label>
           <Input
@@ -151,7 +145,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
             placeholder="0,00"
             value={valorTotal}
             onChange={(e) => setValorTotal(e.target.value)}
-            className="max-w-[150px]"
+            className="max-w-[120px]"
           />
         </div>
 
@@ -165,16 +159,14 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
             placeholder="0,00"
             value={entrada}
             onChange={(e) => setEntrada(e.target.value)}
-            className="max-w-[150px]"
+            className="max-w-[120px]"
           />
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="tipoPagamentoEntrada">Forma de Pagamento da Entrada</Label>
           <Select value={tipoPagamentoEntrada} onValueChange={setTipoPagamentoEntrada}>
-            <SelectTrigger className="max-w-[150px]">
+            <SelectTrigger className="max-w-[120px]">
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
@@ -192,27 +184,27 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
             id="parcelas"
             type="number"
             min="1"
-            placeholder="Digite o número de parcelas"
+            placeholder="Parcelas"
             value={parcelas}
             onChange={(e) => setParcelas(e.target.value)}
-            className="max-w-[150px]"
+            className="max-w-[120px]"
           />
         </div>
-      </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="tipoPagamento">Tipo de Pagamento das Parcelas</Label>
-        <Select value={tipoPagamento} onValueChange={setTipoPagamento}>
-          <SelectTrigger className="max-w-[150px]">
-            <SelectValue placeholder="Selecione" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="pix">PIX</SelectItem>
-            <SelectItem value="dinheiro">Dinheiro</SelectItem>
-            <SelectItem value="cartao">Cartão</SelectItem>
-            <SelectItem value="boleto">Boleto</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="space-y-2">
+          <Label htmlFor="tipoPagamento">Tipo de Pagamento das Parcelas</Label>
+          <Select value={tipoPagamento} onValueChange={setTipoPagamento}>
+            <SelectTrigger className="max-w-[120px]">
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pix">PIX</SelectItem>
+              <SelectItem value="dinheiro">Dinheiro</SelectItem>
+              <SelectItem value="cartao">Cartão</SelectItem>
+              <SelectItem value="boleto">Boleto</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Button type="submit" className="w-full md:w-auto">
