@@ -84,13 +84,17 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
     }
 
     const valorRestante = valorTotalNum - entradaNum;
-    const valorParcelaCalculado = valorRestante / parcelasNum;
-    const valorParcela = Number(valorParcelaCalculado.toFixed(2));
-
-    // Criar array de parcelas
+    
+    // Melhorado o cálculo para evitar diferenças de centavos
+    const valorParcelaBase = valorRestante / parcelasNum;
+    const valorParcelaNormal = Number(valorParcelaBase.toFixed(2));
+    const totalParcelasNormal = valorParcelaNormal * parcelasNum;
+    const diferenca = Number((valorRestante - totalParcelasNormal).toFixed(2));
+    
+    // Criar array de parcelas com ajuste na última parcela se necessário
     const parcelasInfo: Parcela[] = Array.from({ length: parcelasNum }, (_, index) => ({
       numero: index + 1,
-      valor: valorParcela,
+      valor: index === parcelasNum - 1 ? valorParcelaNormal + diferenca : valorParcelaNormal,
       paga: initialData?.parcelasInfo[index]?.paga || false,
       dataVencimento: initialData?.parcelasInfo[index]?.dataVencimento || 
         new Date(new Date().setMonth(new Date().getMonth() + index + 1)),
@@ -104,7 +108,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
       tipoPagamentoEntrada,
       parcelas: parcelasNum,
       tipoPagamento,
-      valorParcela,
+      valorParcela: valorParcelaNormal,
       dataCadastro: initialData?.dataCadastro || new Date(),
       parcelasInfo,
     };
@@ -125,7 +129,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-3xl mx-auto fade-in">
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl mx-auto fade-in">
       <div className="space-y-2">
         <Label htmlFor="nome">Nome do Cliente</Label>
         <Input
@@ -133,7 +137,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
           placeholder="Digite o nome do cliente"
           value={nome}
           onChange={(e) => setNome(e.target.value)}
-          className="max-w-xl"
+          className="max-w-lg"
         />
       </div>
 
@@ -148,7 +152,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
             placeholder="0,00"
             value={valorTotal}
             onChange={(e) => setValorTotal(e.target.value)}
-            className="max-w-[200px]"
+            className="max-w-[150px]"
           />
         </div>
 
@@ -162,7 +166,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
             placeholder="0,00"
             value={entrada}
             onChange={(e) => setEntrada(e.target.value)}
-            className="max-w-[200px]"
+            className="max-w-[150px]"
           />
         </div>
       </div>
@@ -171,7 +175,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
         <div className="space-y-2">
           <Label htmlFor="tipoPagamentoEntrada">Forma de Pagamento da Entrada</Label>
           <Select value={tipoPagamentoEntrada} onValueChange={setTipoPagamentoEntrada}>
-            <SelectTrigger className="max-w-[200px]">
+            <SelectTrigger className="max-w-[150px]">
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
@@ -192,7 +196,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
             placeholder="Digite o número de parcelas"
             value={parcelas}
             onChange={(e) => setParcelas(e.target.value)}
-            className="max-w-[200px]"
+            className="max-w-[150px]"
           />
         </div>
       </div>
@@ -200,7 +204,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
       <div className="space-y-2">
         <Label htmlFor="tipoPagamento">Tipo de Pagamento das Parcelas</Label>
         <Select value={tipoPagamento} onValueChange={setTipoPagamento}>
-          <SelectTrigger className="max-w-[200px]">
+          <SelectTrigger className="max-w-[150px]">
             <SelectValue placeholder="Selecione" />
           </SelectTrigger>
           <SelectContent>
