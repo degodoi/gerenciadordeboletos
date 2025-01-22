@@ -20,9 +20,10 @@ interface BoletoListProps {
   boletos: Boleto[];
   onParcelaPaga: (boletoId: string, parcelaIndex: number) => void;
   onEdit: (boleto: Boleto) => void;
+  onDelete: (boletoId: string) => void;
 }
 
-export function BoletoList({ boletos, onParcelaPaga, onEdit }: BoletoListProps) {
+export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoListProps) {
   const [expandedBoleto, setExpandedBoleto] = useState<string | null>(null);
 
   useEffect(() => {
@@ -123,6 +124,21 @@ export function BoletoList({ boletos, onParcelaPaga, onEdit }: BoletoListProps) 
                       onClick={() => onEdit(boleto)}
                     >
                       <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => {
+                        if (window.confirm('Tem certeza que deseja excluir este boleto?')) {
+                          onDelete(boleto.id);
+                          toast.success("Boleto excluído com sucesso!", {
+                            duration: 2000,
+                          });
+                        }
+                      }}
+                    >
+                      <AlertTriangle className="h-4 w-4" />
                     </Button>
                   </div>
                 </TableCell>

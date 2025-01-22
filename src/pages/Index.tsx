@@ -37,6 +37,10 @@ const Index = () => {
     setEditingBoleto(boleto);
   };
 
+  const handleDelete = (boletoId: string) => {
+    setBoletos((prev) => prev.filter((boleto) => boleto.id !== boletoId));
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="mx-auto max-w-4xl space-y-6">
@@ -60,6 +64,7 @@ const Index = () => {
               boletos={boletos} 
               onParcelaPaga={handleParcelaPaga} 
               onEdit={handleEdit}
+              onDelete={handleDelete}
             />
           </div>
         )}

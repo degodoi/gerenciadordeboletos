@@ -85,16 +85,15 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
 
     const valorRestante = valorTotalNum - entradaNum;
     
-    // Melhorado o cálculo para evitar diferenças de centavos
-    const valorParcelaBase = valorRestante / parcelasNum;
-    const valorParcelaNormal = Number(valorParcelaBase.toFixed(2));
-    const totalParcelasNormal = valorParcelaNormal * parcelasNum;
-    const diferenca = Number((valorRestante - totalParcelasNormal).toFixed(2));
+    // Cálculo preciso das parcelas
+    const valorParcelaExato = valorRestante / parcelasNum;
+    const valorParcelaNormal = Math.floor(valorParcelaExato * 100) / 100; // Arredonda para baixo
+    const totalParcelasNormal = valorParcelaNormal * (parcelasNum - 1);
+    const ultimaParcela = Number((valorRestante - totalParcelasNormal).toFixed(2));
     
-    // Criar array de parcelas com ajuste na última parcela se necessário
     const parcelasInfo: Parcela[] = Array.from({ length: parcelasNum }, (_, index) => ({
       numero: index + 1,
-      valor: index === parcelasNum - 1 ? valorParcelaNormal + diferenca : valorParcelaNormal,
+      valor: index === parcelasNum - 1 ? ultimaParcela : valorParcelaNormal,
       paga: initialData?.parcelasInfo[index]?.paga || false,
       dataVencimento: initialData?.parcelasInfo[index]?.dataVencimento || 
         new Date(new Date().setMonth(new Date().getMonth() + index + 1)),
@@ -129,7 +128,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl mx-auto fade-in">
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-xl mx-auto fade-in">
       <div className="space-y-2">
         <Label htmlFor="nome">Nome do Cliente</Label>
         <Input
