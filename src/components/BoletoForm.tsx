@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { addMonths } from "date-fns";
+import { v4 as uuidv4 } from "uuid";
 
 interface BoletoFormProps {
   onSubmit: (boleto: Boleto) => void;
@@ -66,67 +68,54 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const valorTotalNum = parseFloat(valorTotal);
-    const entradaNum = parseFloat(entrada) || 0;
-    const parcelasNum = parseInt(parcelas);
-
-    if (!nome || !valorTotal || !parcelas || !tipoPagamento || !tipoPagamentoEntrada) {
-      toast.error("Por favor, preencha todos os campos obrigatórios", {
-        duration: 2000,
+    if (!nome || !valorTotal || !entrada || !tipoPagamentoEntrada || !parcelas || !tipoPagamento) {
+      toast.error("Preencha todos os campos!", {
+        duration: 1000,
       });
       return;
     }
 
-    if (entradaNum > valorTotalNum) {
-      toast.error("O valor da entrada não pode ser maior que o valor total", {
-        duration: 2000,
+    const valorTotalNum = parseFloat(valorTotal.replace(/\D/g, "")) / 100;
+    const entradaNum = parseFloat(entrada.replace(/\D/g, "")) / 100;
+    const parcelasNum = parseInt(parcelas);
+
+    if (entradaNum >= valorTotalNum) {
+      toast.error("O valor da entrada deve ser menor que o valor total!", {
+        duration: 1000,
       });
       return;
     }
 
     if (parcelasNum <= 0) {
-      toast.error("O número de parcelas deve ser maior que zero", {
-        duration: 2000,
+      toast.error("O número de parcelas deve ser maior que zero!", {
+        duration: 1000,
       });
       return;
     }
 
-    const valorRestante = valorTotalNum - entradaNum;
-    const valorParcelaExato = valorRestante / parcelasNum;
-
-    // Verificação da precisão do cálculo
-    const somaTotal = (valorParcelaExato * parcelasNum) + entradaNum;
-    if (Math.abs(somaTotal - valorTotalNum) > 0.01) {
-      toast.error("Erro no cálculo das parcelas. Por favor, verifique os valores.", {
-        duration: 2000,
-      });
-      return;
-    }
-    
-    const parcelasInfo: Parcela[] = Array.from({ length: parcelasNum }, (_, index) => ({
+    const valorParcela = (valorTotalNum - entradaNum) / parcelasNum;
+    const parcelasInfo = Array.from({ length: parcelasNum }, (_, index) => ({
       numero: index + 1,
-      valor: valorParcelaExato,
-      paga: initialData?.parcelasInfo[index]?.paga || false,
-      dataVencimento: initialData?.parcelasInfo[index]?.dataVencimento || 
-        new Date(new Date().setMonth(new Date().getMonth() + index + 1)),
+      valor: valorParcela,
+      dataVencimento: addMonths(new Date(), index + 1),
+      paga: false,
     }));
 
     const novoBoleto: Boleto = {
-      id: initialData?.id || crypto.randomUUID(),
+      id: initialData?.id || uuidv4(),
       nome,
       valorTotal: valorTotalNum,
       entrada: entradaNum,
       tipoPagamentoEntrada,
       parcelas: parcelasNum,
+      valorParcela,
       tipoPagamento,
-      valorParcela: valorParcelaExato,
-      dataCadastro: initialData?.dataCadastro || new Date(),
       parcelasInfo,
     };
 
     onSubmit(novoBoleto);
-    toast.success(initialData ? "Boleto atualizado com sucesso!" : "Boleto cadastrado com sucesso!", {
-      duration: 2000,
+    toast.success("Boleto salvo com sucesso!", {
+      duration: 1000,
     });
 
     // Limpar campos após o envio
@@ -230,4 +219,3 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
       </Button>
     </form>
   );
-}

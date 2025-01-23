@@ -37,7 +37,7 @@ export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoL
   const handleParcelaPaga = (boletoId: string, parcelaIndex: number) => {
     onParcelaPaga(boletoId, parcelaIndex);
     toast.success(`Parcela ${parcelaIndex + 1} atualizada com sucesso!`, {
-      duration: 3000,
+      duration: 1000,
     });
   };
 
@@ -50,12 +50,12 @@ export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoL
         if (!parcela.paga) {
           if (isBefore(parcela.dataVencimento, today)) {
             toast.error(`Parcela ${index + 1} do boleto de ${boleto.nome} está vencida!`, {
-              duration: 5000,
+              duration: 1000,
               icon: <AlertTriangle className="h-5 w-5 text-red-500" />,
             });
           } else if (isBefore(parcela.dataVencimento, sevenDaysFromNow)) {
             toast.warning(`Parcela ${index + 1} do boleto de ${boleto.nome} vence em breve!`, {
-              duration: 5000,
+              duration: 1000,
             });
           }
         }
