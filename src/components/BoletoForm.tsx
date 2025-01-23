@@ -52,6 +52,14 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
       setTipoPagamentoEntrada(initialData.tipoPagamentoEntrada);
       setParcelas(initialData.parcelas.toString());
       setTipoPagamento(initialData.tipoPagamento);
+    } else {
+      // Limpar campos quando não houver dados iniciais
+      setNome("");
+      setValorTotal("");
+      setEntrada("");
+      setTipoPagamentoEntrada("");
+      setParcelas("");
+      setTipoPagamento("");
     }
   }, [initialData]);
 
@@ -121,6 +129,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
       duration: 2000,
     });
 
+    // Limpar campos após o envio
     if (!initialData) {
       setNome("");
       setValorTotal("");

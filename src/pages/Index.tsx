@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { BoletoForm, type Boleto } from "@/components/BoletoForm";
 import { BoletoList } from "@/components/BoletoList";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 const Index = () => {
   const [boletos, setBoletos] = useState<Boleto[]>([]);
   const [editingBoleto, setEditingBoleto] = useState<Boleto | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   const handleSubmit = (novoBoleto: Boleto) => {
     if (editingBoleto) {
@@ -15,6 +18,7 @@ const Index = () => {
     } else {
       setBoletos((prev) => [novoBoleto, ...prev]);
     }
+    setShowForm(false);
   };
 
   const handleParcelaPaga = (boletoId: string, parcelaIndex: number) => {
@@ -35,10 +39,16 @@ const Index = () => {
 
   const handleEdit = (boleto: Boleto) => {
     setEditingBoleto(boleto);
+    setShowForm(true);
   };
 
   const handleDelete = (boletoId: string) => {
     setBoletos((prev) => prev.filter((boleto) => boleto.id !== boletoId));
+  };
+
+  const handleNewBoleto = () => {
+    setEditingBoleto(null);
+    setShowForm(true);
   };
 
   return (
@@ -53,9 +63,18 @@ const Index = () => {
           </p>
         </div>
 
-        <div className="rounded-lg border bg-card p-4 md:p-6">
-          <BoletoForm onSubmit={handleSubmit} initialData={editingBoleto} />
-        </div>
+        {!showForm ? (
+          <div className="flex justify-center">
+            <Button onClick={handleNewBoleto} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Novo Boleto
+            </Button>
+          </div>
+        ) : (
+          <div className="rounded-lg border bg-card p-4 md:p-6 fade-in">
+            <BoletoForm onSubmit={handleSubmit} initialData={editingBoleto} />
+          </div>
+        )}
 
         {boletos.length > 0 && (
           <div className="space-y-4">
