@@ -111,6 +111,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
       valorParcela,
       tipoPagamento,
       parcelasInfo,
+      dataCadastro: new Date(),
     };
 
     onSubmit(novoBoleto);
@@ -219,3 +220,4 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
       </Button>
     </form>
   );
+}
