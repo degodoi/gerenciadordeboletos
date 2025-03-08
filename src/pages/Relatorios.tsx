@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +11,7 @@ import { ArrowLeft, Download, Printer, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { BackButton } from "@/components/BackButton";
 
 interface RelatoriosProps {
   boletos: Boleto[];
@@ -22,7 +22,6 @@ const COLORS = ['#e11d48', '#000000', '#666666', '#999999', '#cccccc'];
 const Relatorios = ({ boletos }: RelatoriosProps) => {
   const [periodoFiltro, setPeriodoFiltro] = useState<string>("todos");
   
-  // Filtrar boletos por período
   const boletosFiltered = React.useMemo(() => {
     if (periodoFiltro === "todos") return boletos;
     
@@ -48,7 +47,6 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
     return boletos;
   }, [boletos, periodoFiltro]);
 
-  // Preparar dados para os gráficos
   const dadosPorTipoPagamento = React.useMemo(() => {
     const dados: Record<string, number> = {};
     boletosFiltered.forEach(boleto => {
@@ -103,10 +101,9 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
   };
 
   const handleExportCSV = () => {
-    // Preparar os dados para CSV
     const cabecalho = "Nome,Valor Total,Entrada,Tipo Pagamento Entrada,Parcelas,Valor Parcela,Tipo Pagamento,Data Cadastro\n";
     const linhas = boletosFiltered.map(boleto => {
-      return `"${boleto.nome}",${boleto.valorTotal},${boleto.entrada},"${boleto.tipoPagamentoEntrada}",${boleto.parcelas},${boleto.valorParcela},"${boleto.tipoPagamento}","${format(new Date(boleto.dataCadastro), 'dd/MM/yyyy')}"`
+      return `"${boleto.nome}",${boleto.valorTotal},${boleto.entrada},"${boleto.tipoPagamentoEntrada}",${boleto.parcelas},${boleto.valorParcela},"${boleto.tipoPagamento}","${format(new Date(boleto.dataCadastro), 'dd/MM/yyyy')}"`;
     }).join("\n");
     
     const csvContent = "data:text/csv;charset=utf-8," + cabecalho + linhas;
@@ -130,12 +127,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" className="bg-transparent border-white text-white hover:bg-white/10" asChild>
-              <Link to="/">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Voltar
-              </Link>
-            </Button>
+            <BackButton to="/" />
             <Select value={periodoFiltro} onValueChange={setPeriodoFiltro}>
               <SelectTrigger className="w-[180px] bg-white/10 border-white/20 text-white">
                 <SelectValue placeholder="Período" />
