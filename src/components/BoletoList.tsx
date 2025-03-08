@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -14,7 +15,15 @@ import type { Boleto } from "./BoletoForm";
 import { format, isAfter, isBefore, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { Edit, AlertTriangle } from "lucide-react";
+import { Edit, Trash2, ChevronDown, ChevronUp, AlertTriangle, Check, Clock } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface BoletoListProps {
   boletos: Boleto[];
@@ -77,123 +86,179 @@ export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoL
     return "bg-white border-gray-200";
   };
 
+  const getParcelaStatusIcon = (parcela: { dataVencimento: Date; paga: boolean }) => {
+    const today = new Date();
+    if (parcela.paga) {
+      return <Check className="h-4 w-4 text-green-600" />;
+    }
+    if (isBefore(parcela.dataVencimento, today)) {
+      return <AlertTriangle className="h-4 w-4 text-red-600" />;
+    }
+    if (isBefore(parcela.dataVencimento, addDays(today, 7))) {
+      return <Clock className="h-4 w-4 text-yellow-600" />;
+    }
+    return <Clock className="h-4 w-4 text-gray-400" />;
+  };
+
   return (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm space-y-4 fade-in">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nome</TableHead>
-            <TableHead className="text-right">Valor Total</TableHead>
-            <TableHead className="text-right">Entrada</TableHead>
-            <TableHead>Pgto. Entrada</TableHead>
-            <TableHead className="text-right">Parcelas</TableHead>
-            <TableHead className="text-right">Valor Parcela</TableHead>
-            <TableHead>Pgto. Parcelas</TableHead>
-            <TableHead>Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {boletos.map((boleto) => (
-            <React.Fragment key={boleto.id}>
-              <TableRow className="slide-in">
-                <TableCell className="font-medium">{boleto.nome}</TableCell>
-                <TableCell className="text-right">
-                  {formatarMoeda(boleto.valorTotal)}
-                </TableCell>
-                <TableCell className="text-right">
-                  {formatarMoeda(boleto.entrada)}
-                </TableCell>
-                <TableCell className="capitalize">{boleto.tipoPagamentoEntrada}</TableCell>
-                <TableCell className="text-right">{boleto.parcelas}x</TableCell>
-                <TableCell className="text-right">
-                  {formatarMoeda(boleto.valorParcela)}
-                </TableCell>
-                <TableCell className="capitalize">{boleto.tipoPagamento}</TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleBoleto(boleto.id)}
-                    >
-                      {expandedBoleto === boleto.id ? "Ocultar" : "Ver Parcelas"}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEdit(boleto)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => {
-                        if (window.confirm('Tem certeza que deseja excluir este boleto?')) {
-                          onDelete(boleto.id);
-                          toast.success("Boleto excluído com sucesso!", {
-                            duration: 2000,
-                          });
-                        }
-                      }}
-                    >
-                      <AlertTriangle className="h-4 w-4" />
-                    </Button>
-                  </div>
+    <Card className="fade-in">
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-muted/20">
+              <TableHead>Nome</TableHead>
+              <TableHead className="text-right">Valor Total</TableHead>
+              <TableHead className="text-right">Entrada</TableHead>
+              <TableHead>Pgto. Entrada</TableHead>
+              <TableHead className="text-right">Parcelas</TableHead>
+              <TableHead className="text-right">Valor Parcela</TableHead>
+              <TableHead>Pgto. Parcelas</TableHead>
+              <TableHead>Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {boletos.map((boleto) => {
+              const parcelasPagas = boleto.parcelasInfo.filter(p => p.paga).length;
+              const percentPago = (parcelasPagas / boleto.parcelas) * 100;
+              
+              return (
+                <React.Fragment key={boleto.id}>
+                  <TableRow className="slide-in">
+                    <TableCell className="font-medium">{boleto.nome}</TableCell>
+                    <TableCell className="text-right">
+                      {formatarMoeda(boleto.valorTotal)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatarMoeda(boleto.entrada)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="capitalize">
+                        {boleto.tipoPagamentoEntrada}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end">
+                        <span>{boleto.parcelas}x</span>
+                        <div className="ml-2 w-16 bg-muted rounded-full h-2">
+                          <div 
+                            className="bg-primary h-2 rounded-full" 
+                            style={{ width: `${percentPago}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatarMoeda(boleto.valorParcela)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="capitalize">
+                        {boleto.tipoPagamento}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleBoleto(boleto.id)}
+                        >
+                          {expandedBoleto === boleto.id ? 
+                            <ChevronUp className="h-4 w-4" /> : 
+                            <ChevronDown className="h-4 w-4" />
+                          }
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => onEdit(boleto)}>
+                              Editar Boleto
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onClick={() => {
+                                if (window.confirm('Tem certeza que deseja excluir este boleto?')) {
+                                  onDelete(boleto.id);
+                                  toast.success("Boleto excluído com sucesso!", {
+                                    duration: 2000,
+                                  });
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                  {expandedBoleto === boleto.id && (
+                    <TableRow>
+                      <TableCell colSpan={8}>
+                        <div className="p-4 bg-muted/50 rounded-lg">
+                          <h4 className="font-semibold mb-2">Parcelas:</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {boleto.parcelasInfo.map((parcela, index) => (
+                              <div
+                                key={index}
+                                className={`flex items-center justify-between p-3 rounded-lg border ${getParcelaStatusColor(parcela)}`}
+                              >
+                                <div className="flex items-center">
+                                  {getParcelaStatusIcon(parcela)}
+                                  <div className="ml-3">
+                                    <span className="font-medium">
+                                      Parcela {parcela.numero}
+                                    </span>
+                                    <p className="text-sm text-muted-foreground">
+                                      Vencimento:{" "}
+                                      {format(new Date(parcela.dataVencimento), "dd/MM/yyyy", {
+                                        locale: ptBR,
+                                      })}
+                                    </p>
+                                    <p className="text-sm font-medium">
+                                      {formatarMoeda(parcela.valor)}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`parcela-${boleto.id}-${index}`}
+                                    checked={parcela.paga}
+                                    onCheckedChange={() =>
+                                      handleParcelaPaga(boleto.id, index)
+                                    }
+                                  />
+                                  <label
+                                    htmlFor={`parcela-${boleto.id}-${index}`}
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                  >
+                                    Paga
+                                  </label>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </React.Fragment>
+              );
+            })}
+            {boletos.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={8} className="h-24 text-center">
+                  Nenhum boleto cadastrado
                 </TableCell>
               </TableRow>
-              {expandedBoleto === boleto.id && (
-                <TableRow>
-                  <TableCell colSpan={8}>
-                    <div className="p-4 bg-muted/50 rounded-lg">
-                      <h4 className="font-semibold mb-2">Parcelas:</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {boleto.parcelasInfo.map((parcela, index) => (
-                          <div
-                            key={index}
-                            className={`flex items-center justify-between p-2 rounded-lg border ${getParcelaStatusColor(parcela)}`}
-                          >
-                            <div>
-                              <span className="font-medium">
-                                Parcela {parcela.numero}
-                              </span>
-                              <p className="text-sm text-muted-foreground">
-                                Vencimento:{" "}
-                                {format(parcela.dataVencimento, "dd/MM/yyyy", {
-                                  locale: ptBR,
-                                })}
-                              </p>
-                              <p className="text-sm">
-                                Valor: {formatarMoeda(parcela.valor)}
-                              </p>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id={`parcela-${boleto.id}-${index}`}
-                                checked={parcela.paga}
-                                onCheckedChange={() =>
-                                  handleParcelaPaga(boleto.id, index)
-                                }
-                              />
-                              <label
-                                htmlFor={`parcela-${boleto.id}-${index}`}
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                              >
-                                Paga
-                              </label>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </React.Fragment>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }

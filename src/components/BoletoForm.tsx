@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import {
 import { toast } from "sonner";
 import { addMonths } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface BoletoFormProps {
   onSubmit: (boleto: Boleto) => void;
@@ -75,8 +77,8 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
       return;
     }
 
-    const valorTotalNum = parseFloat(valorTotal.replace(/\D/g, "")) / 100;
-    const entradaNum = parseFloat(entrada.replace(/\D/g, "")) / 100;
+    const valorTotalNum = parseFloat(valorTotal);
+    const entradaNum = parseFloat(entrada);
     const parcelasNum = parseInt(parcelas);
 
     if (entradaNum >= valorTotalNum) {
@@ -111,7 +113,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
       valorParcela,
       tipoPagamento,
       parcelasInfo,
-      dataCadastro: new Date(),
+      dataCadastro: initialData?.dataCadastro || new Date(),
     };
 
     onSubmit(novoBoleto);
@@ -131,93 +133,102 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto fade-in">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="space-y-2">
-          <Label htmlFor="nome">Nome do Cliente</Label>
-          <Input
-            id="nome"
-            placeholder="Digite o nome do cliente"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-          />
-        </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>{initialData ? "Editar Boleto" : "Novo Boleto"}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto fade-in">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="nome">Nome do Cliente</Label>
+              <Input
+                id="nome"
+                placeholder="Digite o nome do cliente"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+              />
+            </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="valorTotal">Valor Total (R$)</Label>
-          <Input
-            id="valorTotal"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="0,00"
-            value={valorTotal}
-            onChange={(e) => setValorTotal(e.target.value)}
-            className="max-w-[120px]"
-          />
-        </div>
+            <div className="space-y-2">
+              <Label htmlFor="valorTotal">Valor Total (R$)</Label>
+              <Input
+                id="valorTotal"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0,00"
+                value={valorTotal}
+                onChange={(e) => setValorTotal(e.target.value)}
+                className="max-w-[120px]"
+              />
+            </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="entrada">Entrada (R$)</Label>
-          <Input
-            id="entrada"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="0,00"
-            value={entrada}
-            onChange={(e) => setEntrada(e.target.value)}
-            className="max-w-[120px]"
-          />
-        </div>
+            <div className="space-y-2">
+              <Label htmlFor="entrada">Entrada (R$)</Label>
+              <Input
+                id="entrada"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0,00"
+                value={entrada}
+                onChange={(e) => setEntrada(e.target.value)}
+                className="max-w-[120px]"
+              />
+            </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="tipoPagamentoEntrada">Forma de Pagamento da Entrada</Label>
-          <Select value={tipoPagamentoEntrada} onValueChange={setTipoPagamentoEntrada}>
-            <SelectTrigger className="max-w-[120px]">
-              <SelectValue placeholder="Selecione" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pix">PIX</SelectItem>
-              <SelectItem value="dinheiro">Dinheiro</SelectItem>
-              <SelectItem value="cartao">Cartão</SelectItem>
-              <SelectItem value="boleto">Boleto</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+            <div className="space-y-2">
+              <Label htmlFor="tipoPagamentoEntrada">Forma de Pagamento da Entrada</Label>
+              <Select value={tipoPagamentoEntrada} onValueChange={setTipoPagamentoEntrada}>
+                <SelectTrigger className="max-w-[180px]">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pix">PIX</SelectItem>
+                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                  <SelectItem value="cartao">Cartão</SelectItem>
+                  <SelectItem value="boleto">Boleto</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="parcelas">Número de Parcelas</Label>
-          <Input
-            id="parcelas"
-            type="number"
-            min="1"
-            placeholder="Parcelas"
-            value={parcelas}
-            onChange={(e) => setParcelas(e.target.value)}
-            className="max-w-[120px]"
-          />
-        </div>
+            <div className="space-y-2">
+              <Label htmlFor="parcelas">Número de Parcelas</Label>
+              <Input
+                id="parcelas"
+                type="number"
+                min="1"
+                placeholder="Parcelas"
+                value={parcelas}
+                onChange={(e) => setParcelas(e.target.value)}
+                className="max-w-[120px]"
+              />
+            </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="tipoPagamento">Tipo de Pagamento das Parcelas</Label>
-          <Select value={tipoPagamento} onValueChange={setTipoPagamento}>
-            <SelectTrigger className="max-w-[120px]">
-              <SelectValue placeholder="Selecione" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pix">PIX</SelectItem>
-              <SelectItem value="dinheiro">Dinheiro</SelectItem>
-              <SelectItem value="cartao">Cartão</SelectItem>
-              <SelectItem value="boleto">Boleto</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+            <div className="space-y-2">
+              <Label htmlFor="tipoPagamento">Tipo de Pagamento das Parcelas</Label>
+              <Select value={tipoPagamento} onValueChange={setTipoPagamento}>
+                <SelectTrigger className="max-w-[180px]">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pix">PIX</SelectItem>
+                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                  <SelectItem value="cartao">Cartão</SelectItem>
+                  <SelectItem value="boleto">Boleto</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-      <Button type="submit" className="w-full md:w-auto">
-        {initialData ? "Atualizar" : "Cadastrar"} Boleto
-      </Button>
-    </form>
+          <div className="flex justify-end">
+            <Button type="submit" className="w-full md:w-auto">
+              {initialData ? "Atualizar" : "Cadastrar"} Boleto
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

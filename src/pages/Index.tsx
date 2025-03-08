@@ -1,8 +1,12 @@
+
 import { useState } from "react";
 import { BoletoForm, type Boleto } from "@/components/BoletoForm";
 import { BoletoList } from "@/components/BoletoList";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Dashboard } from "@/components/Dashboard";
+import { Plus, BarChart } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
 
 const Index = () => {
   const [boletos, setBoletos] = useState<Boleto[]>([]);
@@ -53,32 +57,56 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
-      <div className="mx-auto max-w-4xl space-y-6">
-        <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-bold tracking-tight">
-            Controle de Boletos
-          </h1>
-          <p className="text-muted-foreground">
-            {editingBoleto ? "Editar boleto" : "Cadastre e gerencie seus boletos de forma simples e rápida"}
-          </p>
-        </div>
+      <div className="mx-auto max-w-6xl space-y-6">
+        <header className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">
+              Controle de Boletos
+            </h1>
+            <p className="text-muted-foreground">
+              {editingBoleto 
+                ? "Editar boleto" 
+                : "Cadastre e gerencie seus boletos de forma simples e rápida"}
+            </p>
+          </div>
+          
+          <div className="flex space-x-2">
+            {!showForm && (
+              <>
+                <Button onClick={handleNewBoleto} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Novo Boleto
+                </Button>
+                
+                <Button variant="outline" asChild>
+                  <Link to="/relatorios" className="flex items-center gap-2">
+                    <BarChart className="h-4 w-4" />
+                    Relatórios
+                  </Link>
+                </Button>
+              </>
+            )}
+          </div>
+        </header>
 
-        {!showForm ? (
-          <div className="flex justify-center">
-            <Button onClick={handleNewBoleto} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Novo Boleto
-            </Button>
-          </div>
-        ) : (
-          <div className="rounded-lg border bg-card p-4 md:p-6 fade-in">
-            <BoletoForm onSubmit={handleSubmit} initialData={editingBoleto} />
-          </div>
+        {boletos.length > 0 && !showForm && (
+          <Dashboard boletos={boletos} />
         )}
+
+        {showForm ? (
+          <BoletoForm onSubmit={handleSubmit} initialData={editingBoleto} />
+        ) : null}
 
         {boletos.length > 0 && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Boletos Cadastrados</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Boletos Cadastrados</h2>
+              {showForm && (
+                <Button variant="outline" onClick={() => setShowForm(false)}>
+                  Cancelar
+                </Button>
+              )}
+            </div>
             <BoletoList 
               boletos={boletos} 
               onParcelaPaga={handleParcelaPaga} 
@@ -86,6 +114,19 @@ const Index = () => {
               onDelete={handleDelete}
             />
           </div>
+        )}
+        
+        {boletos.length === 0 && !showForm && (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center p-12 text-center">
+              <div className="rounded-full bg-primary/10 p-6 mb-4">
+                <Plus className="h-10 w-10 text-primary" />
+              </div>
+              <h3 className="text-xl font-medium mb-2">Nenhum boleto cadastrado</h3>
+              <p className="text-muted-foreground mb-6">Clique em "Novo Boleto" para começar a cadastrar seus boletos.</p>
+              <Button onClick={handleNewBoleto}>Cadastrar Boleto</Button>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

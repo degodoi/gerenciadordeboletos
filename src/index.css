@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -34,6 +35,17 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+
+  /* Estilo para impressão de relatórios */
+  @media print {
+    .print\:hidden {
+      display: none !important;
+    }
+    body {
+      padding: 20px;
+      background: white;
+    }
+  }
 }
 
 .fade-in {
@@ -63,5 +75,39 @@
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+.hover-scale {
+  transition: transform 0.2s ease-in-out;
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+/* Print styles */
+@media print {
+  .fade-in, .slide-in {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  
+  @page {
+    size: A4;
+    margin: 1cm;
+  }
+  
+  body {
+    font-size: 12pt;
+  }
+  
+  h1 {
+    font-size: 18pt;
+  }
+  
+  h2 {
+    font-size: 16pt;
   }
 }
