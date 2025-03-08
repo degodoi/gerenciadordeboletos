@@ -8,37 +8,45 @@ import { Plus, BarChart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 
-const Index = () => {
-  const [boletos, setBoletos] = useState<Boleto[]>([]);
+interface IndexProps {
+  boletos: Boleto[];
+  onUpdateBoletos: (boletos: Boleto[]) => void;
+}
+
+const Index = ({ boletos, onUpdateBoletos }: IndexProps) => {
   const [editingBoleto, setEditingBoleto] = useState<Boleto | null>(null);
   const [showForm, setShowForm] = useState(false);
 
   const handleSubmit = (novoBoleto: Boleto) => {
+    let newBoletos: Boleto[];
+    
     if (editingBoleto) {
-      setBoletos((prev) =>
-        prev.map((boleto) => (boleto.id === editingBoleto.id ? novoBoleto : boleto))
+      newBoletos = boletos.map((boleto) => 
+        (boleto.id === editingBoleto.id ? novoBoleto : boleto)
       );
-      setEditingBoleto(null);
     } else {
-      setBoletos((prev) => [novoBoleto, ...prev]);
+      newBoletos = [novoBoleto, ...boletos];
     }
+    
+    onUpdateBoletos(newBoletos);
+    setEditingBoleto(null);
     setShowForm(false);
   };
 
   const handleParcelaPaga = (boletoId: string, parcelaIndex: number) => {
-    setBoletos((prevBoletos) =>
-      prevBoletos.map((boleto) => {
-        if (boleto.id === boletoId) {
-          const novasParcelasInfo = [...boleto.parcelasInfo];
-          novasParcelasInfo[parcelaIndex] = {
-            ...novasParcelasInfo[parcelaIndex],
-            paga: !novasParcelasInfo[parcelaIndex].paga,
-          };
-          return { ...boleto, parcelasInfo: novasParcelasInfo };
-        }
-        return boleto;
-      })
-    );
+    const newBoletos = boletos.map((boleto) => {
+      if (boleto.id === boletoId) {
+        const novasParcelasInfo = [...boleto.parcelasInfo];
+        novasParcelasInfo[parcelaIndex] = {
+          ...novasParcelasInfo[parcelaIndex],
+          paga: !novasParcelasInfo[parcelaIndex].paga,
+        };
+        return { ...boleto, parcelasInfo: novasParcelasInfo };
+      }
+      return boleto;
+    });
+    
+    onUpdateBoletos(newBoletos);
   };
 
   const handleEdit = (boleto: Boleto) => {
@@ -47,7 +55,7 @@ const Index = () => {
   };
 
   const handleDelete = (boletoId: string) => {
-    setBoletos((prev) => prev.filter((boleto) => boleto.id !== boletoId));
+    onUpdateBoletos(boletos.filter((boleto) => boleto.id !== boletoId));
   };
 
   const handleNewBoleto = () => {
