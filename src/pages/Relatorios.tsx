@@ -8,7 +8,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from "recharts";
 import { type Boleto } from "@/components/BoletoForm";
 import { formatarMoeda } from "@/lib/utils";
-import { ArrowLeft, Download, Printer } from "lucide-react";
+import { ArrowLeft, Download, Printer, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -17,7 +17,7 @@ interface RelatoriosProps {
   boletos: Boleto[];
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+const COLORS = ['#e11d48', '#000000', '#666666', '#999999', '#cccccc'];
 
 const Relatorios = ({ boletos }: RelatoriosProps) => {
   const [periodoFiltro, setPeriodoFiltro] = useState<string>("todos");
@@ -92,7 +92,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
     });
     
     return [
-      { name: "Pagas", value: parcelasPagas },
+      { name: "Recebidas", value: parcelasPagas },
       { name: "Vencidas", value: parcelasVencidas },
       { name: "A Vencer", value: parcelasAVencer }
     ];
@@ -122,22 +122,22 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 fade-in">
       <div className="mx-auto max-w-6xl space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-gradient-to-r from-secondary to-primary/90 text-white rounded-lg shadow-md">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">Relatórios</h1>
-            <p className="text-muted-foreground">
-              Visualize estatísticas e relatórios dos seus boletos
+            <h1 className="text-3xl font-bold tracking-tight">CFC Direção - Relatórios</h1>
+            <p className="text-white/80">
+              Visualize estatísticas e relatórios das suas contas a receber
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" asChild>
+            <Button variant="outline" className="bg-transparent border-white text-white hover:bg-white/10" asChild>
               <Link to="/">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Voltar
               </Link>
             </Button>
             <Select value={periodoFiltro} onValueChange={setPeriodoFiltro}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[180px] bg-white/10 border-white/20 text-white">
                 <SelectValue placeholder="Período" />
               </SelectTrigger>
               <SelectContent>
@@ -150,18 +150,18 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
         </div>
 
         <div className="flex justify-end space-x-2 print:hidden">
-          <Button variant="outline" onClick={handleExportCSV}>
+          <Button variant="outline" onClick={handleExportCSV} className="border-primary/20">
             <Download className="mr-2 h-4 w-4" />
             Exportar CSV
           </Button>
-          <Button variant="outline" onClick={handleExportPDF}>
+          <Button variant="outline" onClick={handleExportPDF} className="border-primary/20">
             <Printer className="mr-2 h-4 w-4" />
             Imprimir Relatório
           </Button>
         </div>
 
         <Tabs defaultValue="resumo" className="space-y-4">
-          <TabsList>
+          <TabsList className="border border-primary/20">
             <TabsTrigger value="resumo">Resumo</TabsTrigger>
             <TabsTrigger value="graficos">Gráficos</TabsTrigger>
             <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
@@ -169,7 +169,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
           
           <TabsContent value="resumo" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <Card>
+              <Card className="border-primary/20 shadow-md">
                 <CardHeader>
                   <CardTitle>Total de Boletos</CardTitle>
                   <CardDescription>Período selecionado</CardDescription>
@@ -179,7 +179,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="border-primary/20 shadow-md">
                 <CardHeader>
                   <CardTitle>Valor Total</CardTitle>
                   <CardDescription>Soma de todos os boletos</CardDescription>
@@ -191,7 +191,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="border-primary/20 shadow-md">
                 <CardHeader>
                   <CardTitle>Média por Boleto</CardTitle>
                   <CardDescription>Valor médio</CardDescription>
@@ -206,7 +206,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
               </Card>
             </div>
             
-            <Card>
+            <Card className="border-primary/20 shadow-md">
               <CardHeader>
                 <CardTitle>Totais por Forma de Pagamento</CardTitle>
               </CardHeader>
@@ -237,7 +237,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                           return null;
                         }}
                       />
-                      <Bar dataKey="value" fill="#8884d8" />
+                      <Bar dataKey="value" fill="#e11d48" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -247,7 +247,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
           
           <TabsContent value="graficos" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <Card>
+              <Card className="border-primary/20 shadow-md">
                 <CardHeader>
                   <CardTitle>Status das Parcelas</CardTitle>
                 </CardHeader>
@@ -261,7 +261,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                           cy="50%"
                           labelLine={false}
                           outerRadius={80}
-                          fill="#8884d8"
+                          fill="#e11d48"
                           dataKey="value"
                           label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                         >
@@ -277,7 +277,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="border-primary/20 shadow-md">
                 <CardHeader>
                   <CardTitle>Valor por Mês</CardTitle>
                 </CardHeader>
@@ -306,7 +306,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                             return null;
                           }}
                         />
-                        <Line type="monotone" dataKey="valor" stroke="#8884d8" activeDot={{ r: 8 }} />
+                        <Line type="monotone" dataKey="valor" stroke="#e11d48" activeDot={{ r: 8 }} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -316,15 +316,18 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
           </TabsContent>
           
           <TabsContent value="detalhes">
-            <Card>
-              <CardHeader>
-                <CardTitle>Detalhamento de Boletos</CardTitle>
-                <CardDescription>
-                  Lista completa de boletos para o período selecionado
-                </CardDescription>
+            <Card className="border-primary/20 shadow-md">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Detalhamento de Boletos</CardTitle>
+                  <CardDescription>
+                    Lista completa de boletos para o período selecionado
+                  </CardDescription>
+                </div>
+                <FileText className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="rounded-md border">
+                <div className="rounded-md border border-primary/20">
                   <table className="min-w-full divide-y divide-border">
                     <thead>
                       <tr className="bg-muted/50">
