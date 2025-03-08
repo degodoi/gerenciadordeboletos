@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreditCard, Users, Receipt, PiggyBank, AlertCircle } from "lucide-react";
@@ -32,7 +31,7 @@ export function Dashboard({ boletos }: DashboardProps) {
       .reduce((total, parcela) => total + parcela.valor, 0);
     return acc + valorVencido;
   }, 0);
-
+  
   return (
     <div className="space-y-6 fade-in">
       <h2 className="text-2xl font-bold tracking-tight">Visão Geral</h2>
