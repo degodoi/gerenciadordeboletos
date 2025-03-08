@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -325,7 +326,10 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                       <tr className="bg-muted/50">
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Cliente</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Valor Total</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Entrada</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Forma Entrada</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Parcelas</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Forma Parcelas</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Data</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
                       </tr>
@@ -340,7 +344,10 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                           <tr key={boleto.id}>
                             <td className="px-4 py-4 whitespace-nowrap">{boleto.nome}</td>
                             <td className="px-4 py-4 whitespace-nowrap">{formatarMoeda(boleto.valorTotal)}</td>
+                            <td className="px-4 py-4 whitespace-nowrap">{formatarMoeda(boleto.entrada)}</td>
+                            <td className="px-4 py-4 whitespace-nowrap capitalize">{boleto.tipoPagamentoEntrada}</td>
                             <td className="px-4 py-4 whitespace-nowrap">{boleto.parcelas}x</td>
+                            <td className="px-4 py-4 whitespace-nowrap capitalize">{boleto.tipoPagamento}</td>
                             <td className="px-4 py-4 whitespace-nowrap">
                               {format(new Date(boleto.dataCadastro), 'dd/MM/yyyy')}
                             </td>
@@ -362,7 +369,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                       })}
                       {boletosFiltered.length === 0 && (
                         <tr>
-                          <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                          <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                             Nenhum boleto encontrado para o período selecionado
                           </td>
                         </tr>
