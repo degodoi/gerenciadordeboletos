@@ -4,7 +4,7 @@ import { BoletoForm, type Boleto } from "@/components/BoletoForm";
 import { BoletoList } from "@/components/BoletoList";
 import { Button } from "@/components/ui/button";
 import { Dashboard } from "@/components/Dashboard";
-import { Plus, BarChart, Banknote, Calendar, TrendingUp } from "lucide-react";
+import { Plus, BarChart, Banknote, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatarMoeda } from "@/lib/utils";
@@ -123,7 +123,7 @@ const Index = ({ boletos, onUpdateBoletos }: IndexProps) => {
         </header>
 
         {!showForm && (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 fade-in">
+          <div className="grid gap-6 md:grid-cols-2 fade-in">
             <Card className="hover-scale border-primary/20 shadow-md">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center text-lg font-medium">
@@ -164,30 +164,6 @@ const Index = ({ boletos, onUpdateBoletos }: IndexProps) => {
                   )}
                 </div>
               </CardContent>
-              <CardFooter className="pt-0">
-                <Button variant="outline" size="sm" className="w-full" onClick={handleNewBoleto}>
-                  Adicionar boleto
-                </Button>
-              </CardFooter>
-            </Card>
-
-            <Card className="hover-scale border-primary/20 shadow-md">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center text-lg font-medium">
-                  <TrendingUp className="h-5 w-5 mr-2 text-primary" />
-                  Ações Rápidas
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button variant="outline" size="sm" className="w-full justify-start" onClick={handleNewBoleto}>
-                  <Plus className="h-4 w-4 mr-2" /> Novo Boleto
-                </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                  <Link to="/relatorios">
-                    <BarChart className="h-4 w-4 mr-2" /> Ver Relatórios
-                  </Link>
-                </Button>
-              </CardContent>
             </Card>
           </div>
         )}
@@ -227,7 +203,7 @@ const Index = ({ boletos, onUpdateBoletos }: IndexProps) => {
               </div>
               <h3 className="text-xl font-medium mb-2">Nenhum boleto cadastrado</h3>
               <p className="text-muted-foreground mb-6">Clique em "Novo Boleto" para começar a cadastrar seus boletos.</p>
-              <Button onClick={handleNewBoleto}>Cadastrar Boleto</Button>
+              <Button onClick={handleNewBoleto}>Novo Boleto</Button>
             </CardContent>
           </Card>
         )}
