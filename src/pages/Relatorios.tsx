@@ -5,11 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Legend, Tooltip, LineChart, Line } from "recharts";
 import { type Boleto } from "@/components/BoletoForm";
 import { formatarMoeda } from "@/lib/utils";
-import { Download, Printer, FileText } from "lucide-react";
-import { format } from "date-fns";
+import { Download, Printer, FileText, Filter, ChevronsUpDown } from "lucide-react";
+import { format, subMonths, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BackButton } from "@/components/BackButton";
 import {
@@ -20,102 +20,216 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface RelatoriosProps {
   boletos: Boleto[];
 }
 
-const COLORS = ['#e11d48', '#000000', '#666666', '#999999', '#cccccc'];
+const COLORS = ['#e11d48', '#0ea5e9', '#84cc16', '#f97316', '#8b5cf6'];
 
 const Relatorios = ({ boletos }: RelatoriosProps) => {
-  const [periodoFiltro, setPeriodoFiltro] = useState<string>("todos");
+  const [periodoFiltro, setPeriodoFiltro] = useState<string>("ultimo-mes");
+  const [statusFiltro, setStatusFiltro] = useState<string>("todos");
+  const [formaPagamentoFiltro, setFormaPagamentoFiltro] = useState<string>("todos");
   
   const boletosFiltered = React.useMemo(() => {
-    if (periodoFiltro === "todos") return boletos;
+    let filtrados = [...boletos];
     
-    const hoje = new Date();
-    const umMesAtras = new Date();
-    umMesAtras.setMonth(hoje.getMonth() - 1);
-    
-    const tresMesesAtras = new Date();
-    tresMesesAtras.setMonth(hoje.getMonth() - 3);
-    
-    if (periodoFiltro === "ultimo-mes") {
-      return boletos.filter(boleto => 
-        new Date(boleto.dataCadastro) >= umMesAtras
-      );
-    }
-    
-    if (periodoFiltro === "ultimos-tres-meses") {
-      return boletos.filter(boleto => 
-        new Date(boleto.dataCadastro) >= tresMesesAtras
-      );
-    }
-    
-    return boletos;
-  }, [boletos, periodoFiltro]);
-
-  const dadosPorTipoPagamento = React.useMemo(() => {
-    const dados: Record<string, number> = {};
-    boletosFiltered.forEach(boleto => {
-      dados[boleto.tipoPagamento] = (dados[boleto.tipoPagamento] || 0) + 1;
-    });
-    
-    return Object.keys(dados).map(key => ({
-      name: key.charAt(0).toUpperCase() + key.slice(1),
-      value: dados[key]
-    }));
-  }, [boletosFiltered]);
-
-  const dadosPorTipoPagamentoEntrada = React.useMemo(() => {
-    const dados: Record<string, number> = {};
-    boletosFiltered.forEach(boleto => {
-      if (boleto.tipoPagamentoEntrada) {
-        dados[boleto.tipoPagamentoEntrada] = (dados[boleto.tipoPagamentoEntrada] || 0) + 1;
+    // Filtro por período
+    if (periodoFiltro !== "todos") {
+      const hoje = new Date();
+      let dataLimite: Date;
+      
+      if (periodoFiltro === "ultimo-mes") {
+        dataLimite = subMonths(hoje, 1);
+      } else if (periodoFiltro === "ultimos-tres-meses") {
+        dataLimite = subMonths(hoje, 3);
+      } else if (periodoFiltro === "ultimos-seis-meses") {
+        dataLimite = subMonths(hoje, 6);
+      } else {
+        dataLimite = subMonths(hoje, 12);
       }
-    });
+      
+      filtrados = filtrados.filter(boleto => 
+        isAfter(new Date(boleto.dataCadastro), dataLimite)
+      );
+    }
     
-    return Object.keys(dados).map(key => ({
-      name: key.charAt(0).toUpperCase() + key.slice(1),
-      value: dados[key]
-    }));
-  }, [boletosFiltered]);
+    // Filtro por tipo de pagamento
+    if (formaPagamentoFiltro !== "todos") {
+      filtrados = filtrados.filter(boleto => 
+        boleto.tipoPagamento === formaPagamentoFiltro || 
+        boleto.tipoPagamentoEntrada === formaPagamentoFiltro
+      );
+    }
+    
+    // Filtro por status
+    if (statusFiltro !== "todos") {
+      if (statusFiltro === "pago") {
+        filtrados = filtrados.filter(boleto => 
+          boleto.parcelasInfo.every(parcela => parcela.paga)
+        );
+      } else if (statusFiltro === "pendente") {
+        filtrados = filtrados.filter(boleto => 
+          boleto.parcelasInfo.some(parcela => !parcela.paga && new Date() < parcela.dataVencimento)
+        );
+      } else if (statusFiltro === "vencido") {
+        filtrados = filtrados.filter(boleto => 
+          boleto.parcelasInfo.some(parcela => !parcela.paga && new Date() > parcela.dataVencimento)
+        );
+      }
+    }
+    
+    return filtrados;
+  }, [boletos, periodoFiltro, statusFiltro, formaPagamentoFiltro]);
 
-  const dadosPorMes = React.useMemo(() => {
-    const dados: Record<string, number> = {};
-    boletosFiltered.forEach(boleto => {
-      const mes = format(new Date(boleto.dataCadastro), "MMM", { locale: ptBR });
-      dados[mes] = (dados[mes] || 0) + boleto.valorTotal;
-    });
+  // Calcular totais importantes
+  const totais = React.useMemo(() => {
+    const valorTotal = boletosFiltered.reduce((acc, boleto) => acc + boleto.valorTotal, 0);
+    const valorEntradas = boletosFiltered.reduce((acc, boleto) => acc + boleto.entrada, 0);
     
-    return Object.keys(dados).map(key => ({
-      name: key,
-      valor: dados[key]
-    }));
-  }, [boletosFiltered]);
-  
-  const dadosStatus = React.useMemo(() => {
-    let parcelasPagas = 0;
-    let parcelasVencidas = 0;
-    let parcelasAVencer = 0;
+    let valorPago = 0;
+    let valorPendente = 0;
+    let valorVencido = 0;
     
     boletosFiltered.forEach(boleto => {
       boleto.parcelasInfo.forEach(parcela => {
         if (parcela.paga) {
-          parcelasPagas++;
+          valorPago += parcela.valor;
         } else if (new Date() > parcela.dataVencimento) {
-          parcelasVencidas++;
+          valorVencido += parcela.valor;
         } else {
-          parcelasAVencer++;
+          valorPendente += parcela.valor;
         }
       });
     });
     
+    return {
+      valorTotal,
+      valorEntradas,
+      valorParcelas: valorTotal - valorEntradas,
+      valorPago,
+      valorPendente,
+      valorVencido,
+      valorRecebido: valorEntradas + valorPago,
+      valorAReceber: valorPendente + valorVencido
+    };
+  }, [boletosFiltered]);
+
+  // Dados por forma de pagamento para o gráfico
+  const dadosPorFormaPagamento = React.useMemo(() => {
+    // Mapeia as formas de pagamento para valores recebidos
+    const formasPagamento: Record<string, number> = {};
+    
+    // Processar entradas
+    boletosFiltered.forEach(boleto => {
+      if (boleto.entrada > 0 && boleto.tipoPagamentoEntrada) {
+        const forma = boleto.tipoPagamentoEntrada;
+        formasPagamento[forma] = (formasPagamento[forma] || 0) + boleto.entrada;
+      }
+    });
+    
+    // Processar parcelas pagas
+    boletosFiltered.forEach(boleto => {
+      const parcelasPagas = boleto.parcelasInfo.filter(p => p.paga);
+      if (parcelasPagas.length > 0) {
+        const forma = boleto.tipoPagamento;
+        const valorParcelasPagas = parcelasPagas.reduce((acc, p) => acc + p.valor, 0);
+        formasPagamento[forma] = (formasPagamento[forma] || 0) + valorParcelasPagas;
+      }
+    });
+    
+    return Object.keys(formasPagamento).map(forma => ({
+      name: forma.charAt(0).toUpperCase() + forma.slice(1),
+      valor: formasPagamento[forma]
+    }));
+  }, [boletosFiltered]);
+
+  // Dados para o gráfico de status
+  const dadosStatus = React.useMemo(() => {
     return [
-      { name: "Recebidas", value: parcelasPagas },
-      { name: "Vencidas", value: parcelasVencidas },
-      { name: "A Vencer", value: parcelasAVencer }
+      { name: "Recebido", valor: totais.valorRecebido },
+      { name: "A Vencer", valor: totais.valorPendente },
+      { name: "Vencido", valor: totais.valorVencido }
     ];
+  }, [totais]);
+
+  // Dados para o gráfico de evolução mensal
+  const dadosEvolucaoMensal = React.useMemo(() => {
+    const hoje = new Date();
+    const meses = Array.from({length: 6}, (_, i) => {
+      const data = subMonths(hoje, 5 - i);
+      return {
+        mes: format(data, "MMM", { locale: ptBR }),
+        data: data,
+        recebido: 0,
+        pendente: 0
+      };
+    });
+
+    // Para cada boleto, calcular quanto foi recebido e quanto ficou pendente em cada mês
+    boletosFiltered.forEach(boleto => {
+      // Processar entradas
+      const dataEntrada = new Date(boleto.dataCadastro);
+      
+      for (const mes of meses) {
+        if (dataEntrada.getMonth() === mes.data.getMonth() && 
+            dataEntrada.getFullYear() === mes.data.getFullYear()) {
+          mes.recebido += boleto.entrada;
+          break;
+        }
+      }
+      
+      // Processar parcelas
+      boleto.parcelasInfo.forEach(parcela => {
+        const dataParcela = new Date(parcela.dataVencimento);
+        
+        for (const mes of meses) {
+          if (dataParcela.getMonth() === mes.data.getMonth() && 
+              dataParcela.getFullYear() === mes.data.getFullYear()) {
+            if (parcela.paga) {
+              mes.recebido += parcela.valor;
+            } else {
+              mes.pendente += parcela.valor;
+            }
+            break;
+          }
+        }
+      });
+    });
+
+    return meses.map(m => ({
+      name: m.mes,
+      Recebido: m.recebido,
+      Pendente: m.pendente
+    }));
+  }, [boletosFiltered]);
+
+  // Próximos vencimentos
+  const proximosVencimentos = React.useMemo(() => {
+    const hoje = new Date();
+    
+    return boletosFiltered
+      .flatMap(boleto => 
+        boleto.parcelasInfo
+          .filter(parcela => !parcela.paga)
+          .map(parcela => ({
+            cliente: boleto.nome,
+            valor: parcela.valor,
+            data: parcela.dataVencimento,
+            vencido: new Date(parcela.dataVencimento) < hoje,
+            parcela: `${parcela.numero}/${boleto.parcelas}`,
+            formaPagamento: boleto.tipoPagamento
+          }))
+      )
+      .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
+      .slice(0, 5);
   }, [boletosFiltered]);
 
   const handleExportPDF = () => {
@@ -123,198 +237,179 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
   };
 
   const handleExportCSV = () => {
-    const cabecalho = "Nome,Valor Total,Entrada,Tipo Pagamento Entrada,Parcelas,Valor Parcela,Tipo Pagamento,Data Cadastro\n";
+    const cabecalho = "Nome,Valor Total,Entrada,Tipo Pagamento Entrada,Parcelas,Valor Parcela,Tipo Pagamento,Data Cadastro,Status\n";
     const linhas = boletosFiltered.map(boleto => {
-      return `"${boleto.nome}",${boleto.valorTotal},${boleto.entrada},"${boleto.tipoPagamentoEntrada}",${boleto.parcelas},${boleto.valorParcela},"${boleto.tipoPagamento}","${format(new Date(boleto.dataCadastro), 'dd/MM/yyyy')}"`;
+      const parcelasPagas = boleto.parcelasInfo.filter(p => p.paga).length;
+      const totalParcelas = boleto.parcelasInfo.length;
+      const status = parcelasPagas === totalParcelas ? "Pago" : 
+                     boleto.parcelasInfo.some(p => !p.paga && new Date() > p.dataVencimento) ? "Vencido" : "Pendente";
+      
+      return `"${boleto.nome}",${boleto.valorTotal},${boleto.entrada},"${boleto.tipoPagamentoEntrada}",${boleto.parcelas},${boleto.valorParcela},"${boleto.tipoPagamento}","${format(new Date(boleto.dataCadastro), 'dd/MM/yyyy')}","${status}"`;
     }).join("\n");
     
     const csvContent = "data:text/csv;charset=utf-8," + cabecalho + linhas;
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `relatorio_boletos_${format(new Date(), 'dd-MM-yyyy')}.csv`);
+    link.setAttribute("download", `relatorio_contas_receber_${format(new Date(), 'dd-MM-yyyy')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
-
-  const totalValor = boletosFiltered.reduce((acc, boleto) => acc + boleto.valorTotal, 0);
-  const totalEntrada = boletosFiltered.reduce((acc, boleto) => acc + boleto.entrada, 0);
-  const totalParcelado = totalValor - totalEntrada;
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 fade-in">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-gradient-to-r from-secondary to-primary/90 text-white rounded-lg shadow-md">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">CFC Direção - Relatórios</h1>
+            <h1 className="text-3xl font-bold tracking-tight">CFC Direção - Relatório Financeiro</h1>
             <p className="text-white/80">
-              Visualize estatísticas e relatórios das suas contas a receber
+              Visão geral do seu contas a receber e análise financeira
             </p>
           </div>
           <div className="flex items-center gap-2">
             <BackButton to="/" />
-            <Select value={periodoFiltro} onValueChange={setPeriodoFiltro}>
-              <SelectTrigger className="w-[180px] bg-white/10 border-white/20 text-white">
-                <SelectValue placeholder="Período" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os períodos</SelectItem>
-                <SelectItem value="ultimo-mes">Último mês</SelectItem>
-                <SelectItem value="ultimos-tres-meses">Últimos 3 meses</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
 
-        <div className="flex justify-end space-x-2 print:hidden">
-          <Button variant="outline" onClick={handleExportCSV} className="border-primary/20">
-            <Download className="mr-2 h-4 w-4" />
-            Exportar CSV
-          </Button>
-          <Button variant="outline" onClick={handleExportPDF} className="border-primary/20">
-            <Printer className="mr-2 h-4 w-4" />
-            Imprimir Relatório
-          </Button>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Card className="border-primary/20 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle>Filtrar por Período</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Select value={periodoFiltro} onValueChange={setPeriodoFiltro}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione o período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ultimo-mes">Último mês</SelectItem>
+                  <SelectItem value="ultimos-tres-meses">Últimos 3 meses</SelectItem>
+                  <SelectItem value="ultimos-seis-meses">Últimos 6 meses</SelectItem>
+                  <SelectItem value="ultimo-ano">Último ano</SelectItem>
+                  <SelectItem value="todos">Todos os períodos</SelectItem>
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/20 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle>Filtrar por Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Select value={statusFiltro} onValueChange={setStatusFiltro}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione o status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os status</SelectItem>
+                  <SelectItem value="pago">Pagos</SelectItem>
+                  <SelectItem value="pendente">Pendentes</SelectItem>
+                  <SelectItem value="vencido">Vencidos</SelectItem>
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/20 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle>Filtrar por Forma de Pagamento</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Select value={formaPagamentoFiltro} onValueChange={setFormaPagamentoFiltro}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione a forma de pagamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todas as formas</SelectItem>
+                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                  <SelectItem value="cartao">Cartão</SelectItem>
+                  <SelectItem value="pix">PIX</SelectItem>
+                  <SelectItem value="transferencia">Transferência</SelectItem>
+                  <SelectItem value="cheque">Cheque</SelectItem>
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
         </div>
 
-        <Tabs defaultValue="resumo" className="space-y-4">
-          <TabsList className="border border-primary/20">
-            <TabsTrigger value="resumo">Resumo</TabsTrigger>
-            <TabsTrigger value="graficos">Gráficos</TabsTrigger>
-            <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
-            <TabsTrigger value="parcelas">Parcelas</TabsTrigger>
+        <div className="flex justify-between items-center print:hidden">
+          <h2 className="text-2xl font-bold">Resumo Financeiro</h2>
+          <div className="flex space-x-2">
+            <Button variant="outline" onClick={handleExportCSV} className="border-primary/20">
+              <Download className="mr-2 h-4 w-4" />
+              Exportar CSV
+            </Button>
+            <Button variant="outline" onClick={handleExportPDF} className="border-primary/20">
+              <Printer className="mr-2 h-4 w-4" />
+              Imprimir
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Card className="border-primary/20 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle>Total Recebido</CardTitle>
+              <CardDescription>Entradas + parcelas pagas</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-4xl font-bold text-green-600">{formatarMoeda(totais.valorRecebido)}</div>
+              <div className="flex justify-between mt-2 text-sm">
+                <span>Entradas: {formatarMoeda(totais.valorEntradas)}</span>
+                <span>Parcelas: {formatarMoeda(totais.valorPago)}</span>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-primary/20 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle>A Receber</CardTitle>
+              <CardDescription>Parcelas pendentes + vencidas</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-4xl font-bold text-blue-600">{formatarMoeda(totais.valorAReceber)}</div>
+              <div className="flex justify-between mt-2 text-sm">
+                <span>A Vencer: {formatarMoeda(totais.valorPendente)}</span>
+                <span>Vencido: {formatarMoeda(totais.valorVencido)}</span>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-primary/20 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle>Total Movimentado</CardTitle>
+              <CardDescription>Valor total dos boletos</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-4xl font-bold">{formatarMoeda(totais.valorTotal)}</div>
+              <div className="flex justify-between mt-2 text-sm">
+                <span>Total de boletos: {boletosFiltered.length}</span>
+                <span>Média: {boletosFiltered.length ? formatarMoeda(totais.valorTotal / boletosFiltered.length) : formatarMoeda(0)}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Tabs defaultValue="visaogeral" className="space-y-6">
+          <TabsList className="border border-primary/20 w-full justify-start">
+            <TabsTrigger value="visaogeral">Visão Geral</TabsTrigger>
+            <TabsTrigger value="formapagamento">Por Forma de Pagamento</TabsTrigger>
+            <TabsTrigger value="vencimentos">Próximos Vencimentos</TabsTrigger>
+            <TabsTrigger value="detalhada">Visão Detalhada</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="resumo" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <TabsContent value="visaogeral" className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2">
               <Card className="border-primary/20 shadow-md">
                 <CardHeader>
-                  <CardTitle>Total de Boletos</CardTitle>
-                  <CardDescription>Período selecionado</CardDescription>
+                  <CardTitle>Status Financeiro</CardTitle>
+                  <CardDescription>
+                    Distribuição dos valores recebidos, a vencer e vencidos
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold">{boletosFiltered.length}</div>
-                </CardContent>
-              </Card>
-              
-              <Card className="border-primary/20 shadow-md">
-                <CardHeader>
-                  <CardTitle>Valor Total</CardTitle>
-                  <CardDescription>Soma de todos os boletos</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold">
-                    {formatarMoeda(totalValor)}
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="border-primary/20 shadow-md">
-                <CardHeader>
-                  <CardTitle>Média por Boleto</CardTitle>
-                  <CardDescription>Valor médio</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold">
-                    {boletosFiltered.length 
-                      ? formatarMoeda(totalValor / boletosFiltered.length) 
-                      : formatarMoeda(0)}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-            
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <Card className="border-primary/20 shadow-md">
-                <CardHeader>
-                  <CardTitle>Total de Entradas</CardTitle>
-                  <CardDescription>Soma de todas as entradas</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold">
-                    {formatarMoeda(totalEntrada)}
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="border-primary/20 shadow-md">
-                <CardHeader>
-                  <CardTitle>Total Parcelado</CardTitle>
-                  <CardDescription>Valor total - entradas</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold">
-                    {formatarMoeda(totalParcelado)}
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="border-primary/20 shadow-md">
-                <CardHeader>
-                  <CardTitle>Parcelas Pendentes</CardTitle>
-                  <CardDescription>Não pagas</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold">
-                    {boletosFiltered.reduce((acc, boleto) => 
-                      acc + boleto.parcelasInfo.filter(p => !p.paga).length, 0)}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-            
-            <Card className="border-primary/20 shadow-md">
-              <CardHeader>
-                <CardTitle>Totais por Forma de Pagamento</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div>
-                    <h3 className="font-medium mb-2 text-center">Parcelas</h3>
-                    <div className="h-[200px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={dadosPorTipoPagamento}
-                          margin={{ top: 10, right: 10, left: 10, bottom: 20 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <Bar dataKey="value" fill="#e11d48" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-medium mb-2 text-center">Entradas</h3>
-                    <div className="h-[200px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={dadosPorTipoPagamentoEntrada}
-                          margin={{ top: 10, right: 10, left: 10, bottom: 20 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <Bar dataKey="value" fill="#000000" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="graficos" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card className="border-primary/20 shadow-md">
-                <CardHeader>
-                  <CardTitle>Status das Parcelas</CardTitle>
-                </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -322,16 +417,25 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                           data={dadosStatus}
                           cx="50%"
                           cy="50%"
-                          labelLine={false}
-                          outerRadius={80}
+                          labelLine={true}
+                          outerRadius={100}
                           fill="#e11d48"
-                          dataKey="value"
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          dataKey="valor"
+                          nameKey="name"
+                          label={({ name, percent }) => 
+                            `${name}: ${(percent * 100).toFixed(1)}%`
+                          }
                         >
                           {dadosStatus.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={index === 0 ? '#84cc16' : index === 1 ? '#0ea5e9' : '#e11d48'} 
+                            />
                           ))}
                         </Pie>
+                        <Tooltip 
+                          formatter={(value: number) => formatarMoeda(value)}
+                        />
                         <Legend />
                       </PieChart>
                     </ResponsiveContainer>
@@ -341,20 +445,26 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
               
               <Card className="border-primary/20 shadow-md">
                 <CardHeader>
-                  <CardTitle>Valor por Mês</CardTitle>
+                  <CardTitle>Evolução Mensal</CardTitle>
+                  <CardDescription>
+                    Valores recebidos e pendentes nos últimos 6 meses
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
-                        data={dadosPorMes}
-                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                      <BarChart
+                        data={dadosEvolucaoMensal}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
-                        <YAxis />
-                        <Line type="monotone" dataKey="valor" stroke="#e11d48" activeDot={{ r: 8 }} />
-                      </LineChart>
+                        <YAxis tickFormatter={(value) => `R$${value/1000}k`} />
+                        <Tooltip formatter={(value: number) => formatarMoeda(value)} />
+                        <Legend />
+                        <Bar dataKey="Recebido" stackId="a" fill="#84cc16" />
+                        <Bar dataKey="Pendente" stackId="a" fill="#0ea5e9" />
+                      </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </CardContent>
@@ -362,13 +472,123 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
             </div>
           </TabsContent>
           
-          <TabsContent value="detalhes">
+          <TabsContent value="formapagamento" className="space-y-6">
+            <Card className="border-primary/20 shadow-md">
+              <CardHeader>
+                <CardTitle>Valores Recebidos por Forma de Pagamento</CardTitle>
+                <CardDescription>
+                  Distribuição dos valores recebidos por método de pagamento
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={dadosPorFormaPagamento}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis tickFormatter={(value) => `R$${value/1000}k`} />
+                      <Tooltip formatter={(value: number) => formatarMoeda(value)} />
+                      <Bar dataKey="valor" fill="#e11d48">
+                        {dadosPorFormaPagamento.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <Table className="mt-4">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Forma de Pagamento</TableHead>
+                      <TableHead className="text-right">Valor Recebido</TableHead>
+                      <TableHead className="text-right">Porcentagem</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {dadosPorFormaPagamento.map((item, index) => {
+                      const porcentagem = (item.valor / totais.valorRecebido) * 100;
+                      return (
+                        <TableRow key={index}>
+                          <TableCell className="font-medium capitalize">{item.name}</TableCell>
+                          <TableCell className="text-right">{formatarMoeda(item.valor)}</TableCell>
+                          <TableCell className="text-right">{porcentagem.toFixed(1)}%</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {dadosPorFormaPagamento.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                          Nenhum valor recebido no período selecionado
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="vencimentos" className="space-y-6">
+            <Card className="border-primary/20 shadow-md">
+              <CardHeader>
+                <CardTitle>Próximos Vencimentos</CardTitle>
+                <CardDescription>
+                  As próximas parcelas a vencer ou já vencidas
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Parcela</TableHead>
+                      <TableHead>Vencimento</TableHead>
+                      <TableHead>Forma de Pagamento</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {proximosVencimentos.map((item, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{item.cliente}</TableCell>
+                        <TableCell>{item.parcela}</TableCell>
+                        <TableCell>{format(new Date(item.data), 'dd/MM/yyyy')}</TableCell>
+                        <TableCell className="capitalize">{item.formaPagamento}</TableCell>
+                        <TableCell className="text-right">{formatarMoeda(item.valor)}</TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            item.vencido ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {item.vencido ? 'Vencido' : 'A vencer'}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {proximosVencimentos.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          Não há vencimentos pendentes no período selecionado
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="detalhada">
             <Card className="border-primary/20 shadow-md">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle>Detalhamento de Boletos</CardTitle>
+                  <CardTitle>Relatório Detalhado de Boletos</CardTitle>
                   <CardDescription>
-                    Lista completa de boletos para o período selecionado
+                    Lista completa com status de pagamento e valores
                   </CardDescription>
                 </div>
                 <FileText className="h-5 w-5 text-primary" />
@@ -378,15 +598,20 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Cliente</TableHead>
-                        <TableHead>Valor Total</TableHead>
+                        <TableHead>
+                          <div className="flex items-center space-x-1">
+                            <span>Cliente</span>
+                            <ChevronsUpDown className="h-3 w-3" />
+                          </div>
+                        </TableHead>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Total</TableHead>
                         <TableHead>Entrada</TableHead>
                         <TableHead>Forma Entrada</TableHead>
                         <TableHead>Parcelas</TableHead>
-                        <TableHead>Valor Parcela</TableHead>
                         <TableHead>Forma Parcelas</TableHead>
-                        <TableHead>Data</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Informações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -395,30 +620,62 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                         const totalParcelas = boleto.parcelasInfo.length;
                         const percentualPago = (parcelasPagas / totalParcelas) * 100;
                         
+                        const statusBoleto = parcelasPagas === totalParcelas 
+                          ? "Pago"
+                          : boleto.parcelasInfo.some(p => !p.paga && new Date() > p.dataVencimento)
+                            ? "Vencido"
+                            : "Pendente";
+                            
+                        const statusClass = 
+                          statusBoleto === "Pago" 
+                            ? "bg-green-100 text-green-800" 
+                            : statusBoleto === "Vencido"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-blue-100 text-blue-800";
+                        
                         return (
                           <TableRow key={boleto.id}>
-                            <TableCell>{boleto.nome}</TableCell>
+                            <TableCell className="font-medium">{boleto.nome}</TableCell>
+                            <TableCell>{format(new Date(boleto.dataCadastro), 'dd/MM/yyyy')}</TableCell>
                             <TableCell>{formatarMoeda(boleto.valorTotal)}</TableCell>
                             <TableCell>{formatarMoeda(boleto.entrada)}</TableCell>
-                            <TableCell className="capitalize">{boleto.tipoPagamentoEntrada}</TableCell>
-                            <TableCell>{boleto.parcelas}x</TableCell>
-                            <TableCell>{formatarMoeda(boleto.valorParcela)}</TableCell>
+                            <TableCell className="capitalize">{boleto.tipoPagamentoEntrada || "-"}</TableCell>
+                            <TableCell>{`${boleto.parcelas}x de ${formatarMoeda(boleto.valorParcela)}`}</TableCell>
                             <TableCell className="capitalize">{boleto.tipoPagamento}</TableCell>
                             <TableCell>
-                              {format(new Date(boleto.dataCadastro), 'dd/MM/yyyy')}
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}`}>
+                                {statusBoleto}
+                              </span>
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center">
-                                <div className="w-full bg-muted rounded-full h-2.5">
-                                  <div 
-                                    className="bg-primary h-2.5 rounded-full" 
-                                    style={{ width: `${percentualPago}%` }}
-                                  ></div>
-                                </div>
-                                <span className="ml-2 text-xs">
-                                  {parcelasPagas}/{totalParcelas}
-                                </span>
-                              </div>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <Filter className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-[200px]">
+                                  <div className="p-2">
+                                    <div className="text-sm font-medium mb-1">Pagamento</div>
+                                    <div className="text-xs">{parcelasPagas} de {totalParcelas} parcelas pagas</div>
+                                    <div className="w-full bg-muted rounded-full h-2 mt-1">
+                                      <div 
+                                        className="bg-primary h-2 rounded-full" 
+                                        style={{ width: `${percentualPago}%` }}
+                                      ></div>
+                                    </div>
+                                    
+                                    <div className="text-sm font-medium mt-3 mb-1">Próximo Vencimento</div>
+                                    {boleto.parcelasInfo.find(p => !p.paga) ? (
+                                      <div className="text-xs">
+                                        {format(new Date(boleto.parcelasInfo.find(p => !p.paga)!.dataVencimento), 'dd/MM/yyyy')}
+                                      </div>
+                                    ) : (
+                                      <div className="text-xs">Todas parcelas pagas</div>
+                                    )}
+                                  </div>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         );
@@ -426,74 +683,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                       {boletosFiltered.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
-                            Nenhum boleto encontrado para o período selecionado
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="parcelas">
-            <Card className="border-primary/20 shadow-md">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Controle de Parcelas</CardTitle>
-                  <CardDescription>
-                    Lista de todas as parcelas por boleto
-                  </CardDescription>
-                </div>
-                <FileText className="h-5 w-5 text-primary" />
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Cliente</TableHead>
-                        <TableHead>Parcela</TableHead>
-                        <TableHead>Valor</TableHead>
-                        <TableHead>Vencimento</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Forma Pagamento</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {boletosFiltered.flatMap((boleto) => 
-                        boleto.parcelasInfo.map((parcela, index) => (
-                          <TableRow key={`${boleto.id}-${index}`}>
-                            <TableCell>{boleto.nome}</TableCell>
-                            <TableCell>{parcela.numero}/{boleto.parcelas}</TableCell>
-                            <TableCell>{formatarMoeda(parcela.valor)}</TableCell>
-                            <TableCell>
-                              {format(new Date(parcela.dataVencimento), 'dd/MM/yyyy')}
-                            </TableCell>
-                            <TableCell>
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                parcela.paga 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : new Date() > parcela.dataVencimento 
-                                    ? 'bg-red-100 text-red-800' 
-                                    : 'bg-blue-100 text-blue-800'
-                              }`}>
-                                {parcela.paga 
-                                  ? 'Paga' 
-                                  : new Date() > parcela.dataVencimento 
-                                    ? 'Vencida' 
-                                    : 'A vencer'}
-                              </span>
-                            </TableCell>
-                            <TableCell className="capitalize">{boleto.tipoPagamento}</TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                      {boletosFiltered.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                            Nenhuma parcela encontrada para o período selecionado
+                            Nenhum boleto encontrado para os filtros selecionados
                           </TableCell>
                         </TableRow>
                       )}
