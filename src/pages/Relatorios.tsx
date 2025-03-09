@@ -4,15 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { ChartContainer } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from "recharts";
 import { type Boleto } from "@/components/BoletoForm";
 import { formatarMoeda } from "@/lib/utils";
-import { ArrowLeft, Download, Printer, FileText } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Download, Printer, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BackButton } from "@/components/BackButton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface RelatoriosProps {
   boletos: Boleto[];
@@ -52,6 +59,20 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
     const dados: Record<string, number> = {};
     boletosFiltered.forEach(boleto => {
       dados[boleto.tipoPagamento] = (dados[boleto.tipoPagamento] || 0) + 1;
+    });
+    
+    return Object.keys(dados).map(key => ({
+      name: key.charAt(0).toUpperCase() + key.slice(1),
+      value: dados[key]
+    }));
+  }, [boletosFiltered]);
+
+  const dadosPorTipoPagamentoEntrada = React.useMemo(() => {
+    const dados: Record<string, number> = {};
+    boletosFiltered.forEach(boleto => {
+      if (boleto.tipoPagamentoEntrada) {
+        dados[boleto.tipoPagamentoEntrada] = (dados[boleto.tipoPagamentoEntrada] || 0) + 1;
+      }
     });
     
     return Object.keys(dados).map(key => ({
@@ -117,6 +138,10 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
     document.body.removeChild(link);
   };
 
+  const totalValor = boletosFiltered.reduce((acc, boleto) => acc + boleto.valorTotal, 0);
+  const totalEntrada = boletosFiltered.reduce((acc, boleto) => acc + boleto.entrada, 0);
+  const totalParcelado = totalValor - totalEntrada;
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 fade-in">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -158,6 +183,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
             <TabsTrigger value="resumo">Resumo</TabsTrigger>
             <TabsTrigger value="graficos">Gráficos</TabsTrigger>
             <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
+            <TabsTrigger value="parcelas">Parcelas</TabsTrigger>
           </TabsList>
           
           <TabsContent value="resumo" className="space-y-4">
@@ -179,7 +205,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-4xl font-bold">
-                    {formatarMoeda(boletosFiltered.reduce((acc, boleto) => acc + boleto.valorTotal, 0))}
+                    {formatarMoeda(totalValor)}
                   </div>
                 </CardContent>
               </Card>
@@ -192,8 +218,47 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                 <CardContent>
                   <div className="text-4xl font-bold">
                     {boletosFiltered.length 
-                      ? formatarMoeda(boletosFiltered.reduce((acc, boleto) => acc + boleto.valorTotal, 0) / boletosFiltered.length) 
+                      ? formatarMoeda(totalValor / boletosFiltered.length) 
                       : formatarMoeda(0)}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <Card className="border-primary/20 shadow-md">
+                <CardHeader>
+                  <CardTitle>Total de Entradas</CardTitle>
+                  <CardDescription>Soma de todas as entradas</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold">
+                    {formatarMoeda(totalEntrada)}
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="border-primary/20 shadow-md">
+                <CardHeader>
+                  <CardTitle>Total Parcelado</CardTitle>
+                  <CardDescription>Valor total - entradas</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold">
+                    {formatarMoeda(totalParcelado)}
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="border-primary/20 shadow-md">
+                <CardHeader>
+                  <CardTitle>Parcelas Pendentes</CardTitle>
+                  <CardDescription>Não pagas</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold">
+                    {boletosFiltered.reduce((acc, boleto) => 
+                      acc + boleto.parcelasInfo.filter(p => !p.paga).length, 0)}
                   </div>
                 </CardContent>
               </Card>
@@ -204,35 +269,40 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                 <CardTitle>Totais por Forma de Pagamento</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={dadosPorTipoPagamento}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <ChartTooltip 
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            return (
-                              <div className="rounded-lg border bg-background p-2 shadow-sm">
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div className="font-medium">{payload[0].name}</div>
-                                  <div className="font-medium text-right">
-                                    {payload[0].value}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Bar dataKey="value" fill="#e11d48" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div>
+                    <h3 className="font-medium mb-2 text-center">Parcelas</h3>
+                    <div className="h-[200px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={dadosPorTipoPagamento}
+                          margin={{ top: 10, right: 10, left: 10, bottom: 20 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Bar dataKey="value" fill="#e11d48" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-medium mb-2 text-center">Entradas</h3>
+                    <div className="h-[200px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={dadosPorTipoPagamentoEntrada}
+                          margin={{ top: 10, right: 10, left: 10, bottom: 20 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Bar dataKey="value" fill="#000000" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -263,7 +333,6 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                           ))}
                         </Pie>
                         <Legend />
-                        <ChartTooltip />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
@@ -284,21 +353,6 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
                         <YAxis />
-                        <ChartTooltip 
-                          content={({ active, payload, label }) => {
-                            if (active && payload && payload.length) {
-                              return (
-                                <div className="rounded-lg border bg-background p-2 shadow-sm">
-                                  <div className="font-medium">{label}</div>
-                                  <div className="mt-1 text-muted-foreground">
-                                    {formatarMoeda(payload[0].value as number)}
-                                  </div>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }}
-                        />
                         <Line type="monotone" dataKey="valor" stroke="#e11d48" activeDot={{ r: 8 }} />
                       </LineChart>
                     </ResponsiveContainer>
@@ -319,39 +373,41 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                 </div>
                 <FileText className="h-5 w-5 text-primary" />
               </CardHeader>
-              <CardContent>
-                <div className="rounded-md border border-primary/20">
-                  <table className="min-w-full divide-y divide-border">
-                    <thead>
-                      <tr className="bg-muted/50">
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Cliente</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Valor Total</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Entrada</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Forma Entrada</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Parcelas</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Forma Parcelas</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Data</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-background divide-y divide-border">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>Valor Total</TableHead>
+                        <TableHead>Entrada</TableHead>
+                        <TableHead>Forma Entrada</TableHead>
+                        <TableHead>Parcelas</TableHead>
+                        <TableHead>Valor Parcela</TableHead>
+                        <TableHead>Forma Parcelas</TableHead>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {boletosFiltered.map((boleto) => {
                         const parcelasPagas = boleto.parcelasInfo.filter(p => p.paga).length;
                         const totalParcelas = boleto.parcelasInfo.length;
                         const percentualPago = (parcelasPagas / totalParcelas) * 100;
                         
                         return (
-                          <tr key={boleto.id}>
-                            <td className="px-4 py-4 whitespace-nowrap">{boleto.nome}</td>
-                            <td className="px-4 py-4 whitespace-nowrap">{formatarMoeda(boleto.valorTotal)}</td>
-                            <td className="px-4 py-4 whitespace-nowrap">{formatarMoeda(boleto.entrada)}</td>
-                            <td className="px-4 py-4 whitespace-nowrap capitalize">{boleto.tipoPagamentoEntrada}</td>
-                            <td className="px-4 py-4 whitespace-nowrap">{boleto.parcelas}x</td>
-                            <td className="px-4 py-4 whitespace-nowrap capitalize">{boleto.tipoPagamento}</td>
-                            <td className="px-4 py-4 whitespace-nowrap">
+                          <TableRow key={boleto.id}>
+                            <TableCell>{boleto.nome}</TableCell>
+                            <TableCell>{formatarMoeda(boleto.valorTotal)}</TableCell>
+                            <TableCell>{formatarMoeda(boleto.entrada)}</TableCell>
+                            <TableCell className="capitalize">{boleto.tipoPagamentoEntrada}</TableCell>
+                            <TableCell>{boleto.parcelas}x</TableCell>
+                            <TableCell>{formatarMoeda(boleto.valorParcela)}</TableCell>
+                            <TableCell className="capitalize">{boleto.tipoPagamento}</TableCell>
+                            <TableCell>
                               {format(new Date(boleto.dataCadastro), 'dd/MM/yyyy')}
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
+                            </TableCell>
+                            <TableCell>
                               <div className="flex items-center">
                                 <div className="w-full bg-muted rounded-full h-2.5">
                                   <div 
@@ -363,19 +419,86 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                                   {parcelasPagas}/{totalParcelas}
                                 </span>
                               </div>
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         );
                       })}
                       {boletosFiltered.length === 0 && (
-                        <tr>
-                          <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                        <TableRow>
+                          <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                             Nenhum boleto encontrado para o período selecionado
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       )}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="parcelas">
+            <Card className="border-primary/20 shadow-md">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Controle de Parcelas</CardTitle>
+                  <CardDescription>
+                    Lista de todas as parcelas por boleto
+                  </CardDescription>
+                </div>
+                <FileText className="h-5 w-5 text-primary" />
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>Parcela</TableHead>
+                        <TableHead>Valor</TableHead>
+                        <TableHead>Vencimento</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Forma Pagamento</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {boletosFiltered.flatMap((boleto) => 
+                        boleto.parcelasInfo.map((parcela, index) => (
+                          <TableRow key={`${boleto.id}-${index}`}>
+                            <TableCell>{boleto.nome}</TableCell>
+                            <TableCell>{parcela.numero}/{boleto.parcelas}</TableCell>
+                            <TableCell>{formatarMoeda(parcela.valor)}</TableCell>
+                            <TableCell>
+                              {format(new Date(parcela.dataVencimento), 'dd/MM/yyyy')}
+                            </TableCell>
+                            <TableCell>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                parcela.paga 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : new Date() > parcela.dataVencimento 
+                                    ? 'bg-red-100 text-red-800' 
+                                    : 'bg-blue-100 text-blue-800'
+                              }`}>
+                                {parcela.paga 
+                                  ? 'Paga' 
+                                  : new Date() > parcela.dataVencimento 
+                                    ? 'Vencida' 
+                                    : 'A vencer'}
+                              </span>
+                            </TableCell>
+                            <TableCell className="capitalize">{boleto.tipoPagamento}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                      {boletosFiltered.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                            Nenhuma parcela encontrada para o período selecionado
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
               </CardContent>
             </Card>

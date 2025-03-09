@@ -11,7 +11,7 @@ interface BackButtonProps {
 
 export function BackButton({ to, label = "Voltar" }: BackButtonProps) {
   return (
-    <Button variant="outline" className="print:hidden mr-2" asChild>
+    <Button variant="outline" className="print:hidden" asChild>
       <Link to={to} className="flex items-center gap-2">
         <ArrowLeft className="h-4 w-4" />
         {label}
