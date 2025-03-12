@@ -63,8 +63,8 @@ export function BackupManager({ onDataImported }: BackupManagerProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
-          <Download className="h-4 w-4" />
+        <Button variant="outline" className="bg-transparent border-white text-white hover:bg-white/10">
+          <Download className="h-4 w-4 mr-2" />
           Backup
         </Button>
       </DialogTrigger>
