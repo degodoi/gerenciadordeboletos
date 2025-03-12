@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -120,11 +119,21 @@ export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoL
             {boletos.map((boleto) => {
               const parcelasPagas = boleto.parcelasInfo.filter(p => p.paga).length;
               const percentPago = (parcelasPagas / boleto.parcelas) * 100;
+              const isQuitado = boleto.parcelasInfo.every(parcela => parcela.paga);
               
               return (
                 <React.Fragment key={boleto.id}>
-                  <TableRow className="slide-in">
-                    <TableCell className="font-medium">{boleto.nome}</TableCell>
+                  <TableRow className={`slide-in ${isQuitado ? "bg-green-50" : ""}`}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {boleto.nome}
+                        {isQuitado && (
+                          <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100">
+                            Quitado
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right">
                       {formatarMoeda(boleto.valorTotal)}
                     </TableCell>
