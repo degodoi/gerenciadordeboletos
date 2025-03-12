@@ -1,31 +1,12 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChartContainer } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Legend, Tooltip, LineChart, Line } from "recharts";
+import { BackButton } from "@/components/BackButton";
+import { Download, Printer, FileText, Filter, ChevronsUpDown } from "lucide-react";
+import { Filtros } from "@/components/Filtros";
 import { type Boleto } from "@/components/BoletoForm";
 import { formatarMoeda } from "@/lib/utils";
-import { Download, Printer, FileText, Filter, ChevronsUpDown } from "lucide-react";
-import { format, subMonths, isAfter } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { BackButton } from "@/components/BackButton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface RelatoriosProps {
   boletos: Boleto[];
@@ -41,7 +22,6 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
   const boletosFiltered = React.useMemo(() => {
     let filtrados = [...boletos];
     
-    // Filtro por período
     if (periodoFiltro !== "todos") {
       const hoje = new Date();
       let dataLimite: Date;
@@ -61,7 +41,6 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
       );
     }
     
-    // Filtro por tipo de pagamento
     if (formaPagamentoFiltro !== "todos") {
       filtrados = filtrados.filter(boleto => 
         boleto.tipoPagamento === formaPagamentoFiltro || 
@@ -69,7 +48,6 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
       );
     }
     
-    // Filtro por status
     if (statusFiltro !== "todos") {
       if (statusFiltro === "pago") {
         filtrados = filtrados.filter(boleto => 
@@ -89,7 +67,6 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
     return filtrados;
   }, [boletos, periodoFiltro, statusFiltro, formaPagamentoFiltro]);
 
-  // Calcular totais importantes
   const totais = React.useMemo(() => {
     const valorTotal = boletosFiltered.reduce((acc, boleto) => acc + boleto.valorTotal, 0);
     const valorEntradas = boletosFiltered.reduce((acc, boleto) => acc + boleto.entrada, 0);
@@ -122,12 +99,9 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
     };
   }, [boletosFiltered]);
 
-  // Dados por forma de pagamento para o gráfico
   const dadosPorFormaPagamento = React.useMemo(() => {
-    // Mapeia as formas de pagamento para valores recebidos
     const formasPagamento: Record<string, number> = {};
     
-    // Processar entradas
     boletosFiltered.forEach(boleto => {
       if (boleto.entrada > 0 && boleto.tipoPagamentoEntrada) {
         const forma = boleto.tipoPagamentoEntrada;
@@ -135,7 +109,6 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
       }
     });
     
-    // Processar parcelas pagas
     boletosFiltered.forEach(boleto => {
       const parcelasPagas = boleto.parcelasInfo.filter(p => p.paga);
       if (parcelasPagas.length > 0) {
@@ -151,7 +124,6 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
     }));
   }, [boletosFiltered]);
 
-  // Dados para o gráfico de status
   const dadosStatus = React.useMemo(() => {
     return [
       { name: "Recebido", valor: totais.valorRecebido },
@@ -160,7 +132,6 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
     ];
   }, [totais]);
 
-  // Dados para o gráfico de evolução mensal
   const dadosEvolucaoMensal = React.useMemo(() => {
     const hoje = new Date();
     const meses = Array.from({length: 6}, (_, i) => {
@@ -173,9 +144,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
       };
     });
 
-    // Para cada boleto, calcular quanto foi recebido e quanto ficou pendente em cada mês
     boletosFiltered.forEach(boleto => {
-      // Processar entradas
       const dataEntrada = new Date(boleto.dataCadastro);
       
       for (const mes of meses) {
@@ -186,7 +155,6 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
         }
       }
       
-      // Processar parcelas
       boleto.parcelasInfo.forEach(parcela => {
         const dataParcela = new Date(parcela.dataVencimento);
         
@@ -211,7 +179,6 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
     }));
   }, [boletosFiltered]);
 
-  // Próximos vencimentos
   const proximosVencimentos = React.useMemo(() => {
     const hoje = new Date();
     
@@ -260,98 +227,39 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 fade-in">
       <div className="mx-auto max-w-6xl space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-gradient-to-r from-secondary to-primary/90 text-white rounded-lg shadow-md">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-gradient-to-r from-primary/80 to-secondary rounded-lg shadow-lg">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">CFC Direção - Relatório Financeiro</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Relatório Financeiro</h1>
             <p className="text-white/80">
               Visão geral do seu contas a receber e análise financeira
             </p>
           </div>
           <div className="flex items-center gap-2">
             <BackButton to="/" />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card className="border-primary/20 shadow-md">
-            <CardHeader className="pb-2">
-              <CardTitle>Filtrar por Período</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Select value={periodoFiltro} onValueChange={setPeriodoFiltro}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione o período" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ultimo-mes">Último mês</SelectItem>
-                  <SelectItem value="ultimos-tres-meses">Últimos 3 meses</SelectItem>
-                  <SelectItem value="ultimos-seis-meses">Últimos 6 meses</SelectItem>
-                  <SelectItem value="ultimo-ano">Último ano</SelectItem>
-                  <SelectItem value="todos">Todos os períodos</SelectItem>
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
-
-          <Card className="border-primary/20 shadow-md">
-            <CardHeader className="pb-2">
-              <CardTitle>Filtrar por Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Select value={statusFiltro} onValueChange={setStatusFiltro}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione o status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os status</SelectItem>
-                  <SelectItem value="pago">Pagos</SelectItem>
-                  <SelectItem value="pendente">Pendentes</SelectItem>
-                  <SelectItem value="vencido">Vencidos</SelectItem>
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
-
-          <Card className="border-primary/20 shadow-md">
-            <CardHeader className="pb-2">
-              <CardTitle>Filtrar por Forma de Pagamento</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Select value={formaPagamentoFiltro} onValueChange={setFormaPagamentoFiltro}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione a forma de pagamento" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todas as formas</SelectItem>
-                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                  <SelectItem value="cartao">Cartão</SelectItem>
-                  <SelectItem value="pix">PIX</SelectItem>
-                  <SelectItem value="transferencia">Transferência</SelectItem>
-                  <SelectItem value="cheque">Cheque</SelectItem>
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="flex justify-between items-center print:hidden">
-          <h2 className="text-2xl font-bold">Resumo Financeiro</h2>
-          <div className="flex space-x-2">
-            <Button variant="outline" onClick={handleExportCSV} className="border-primary/20">
+            <Button variant="outline" onClick={handleExportCSV} className="bg-white/10 hover:bg-white/20 text-white border-white/20">
               <Download className="mr-2 h-4 w-4" />
               Exportar CSV
             </Button>
-            <Button variant="outline" onClick={handleExportPDF} className="border-primary/20">
+            <Button variant="outline" onClick={handleExportPDF} className="bg-white/10 hover:bg-white/20 text-white border-white/20">
               <Printer className="mr-2 h-4 w-4" />
               Imprimir
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card className="border-primary/20 shadow-md">
+        <Filtros
+          periodoFiltro={periodoFiltro}
+          setPeriodoFiltro={setPeriodoFiltro}
+          statusFiltro={statusFiltro}
+          setStatusFiltro={setStatusFiltro}
+          formaPagamentoFiltro={formaPagamentoFiltro}
+          setFormaPagamentoFiltro={setFormaPagamentoFiltro}
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow bg-white/5 backdrop-blur-sm">
             <CardHeader className="pb-2">
-              <CardTitle>Total Recebido</CardTitle>
+              <CardTitle className="text-xl text-primary">Total Recebido</CardTitle>
               <CardDescription>Entradas + parcelas pagas</CardDescription>
             </CardHeader>
             <CardContent>
@@ -363,9 +271,9 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
             </CardContent>
           </Card>
           
-          <Card className="border-primary/20 shadow-md">
+          <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow bg-white/5 backdrop-blur-sm">
             <CardHeader className="pb-2">
-              <CardTitle>A Receber</CardTitle>
+              <CardTitle className="text-xl text-primary">A Receber</CardTitle>
               <CardDescription>Parcelas pendentes + vencidas</CardDescription>
             </CardHeader>
             <CardContent>
@@ -377,9 +285,9 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
             </CardContent>
           </Card>
           
-          <Card className="border-primary/20 shadow-md">
+          <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow bg-white/5 backdrop-blur-sm">
             <CardHeader className="pb-2">
-              <CardTitle>Total Movimentado</CardTitle>
+              <CardTitle className="text-xl text-primary">Total Movimentado</CardTitle>
               <CardDescription>Valor total dos boletos</CardDescription>
             </CardHeader>
             <CardContent>
@@ -393,16 +301,24 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
         </div>
 
         <Tabs defaultValue="visaogeral" className="space-y-6">
-          <TabsList className="border border-primary/20 w-full justify-start">
-            <TabsTrigger value="visaogeral">Visão Geral</TabsTrigger>
-            <TabsTrigger value="formapagamento">Por Forma de Pagamento</TabsTrigger>
-            <TabsTrigger value="vencimentos">Próximos Vencimentos</TabsTrigger>
-            <TabsTrigger value="detalhada">Visão Detalhada</TabsTrigger>
+          <TabsList className="w-full justify-start bg-white/5 backdrop-blur-sm border border-primary/20 p-1 rounded-lg">
+            <TabsTrigger value="visaogeral" className="data-[state=active]:bg-primary data-[state=active]:text-white">
+              Visão Geral
+            </TabsTrigger>
+            <TabsTrigger value="formapagamento" className="data-[state=active]:bg-primary data-[state=active]:text-white">
+              Por Forma de Pagamento
+            </TabsTrigger>
+            <TabsTrigger value="vencimentos" className="data-[state=active]:bg-primary data-[state=active]:text-white">
+              Próximos Vencimentos
+            </TabsTrigger>
+            <TabsTrigger value="detalhada" className="data-[state=active]:bg-primary data-[state=active]:text-white">
+              Visão Detalhada
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="visaogeral" className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
-              <Card className="border-primary/20 shadow-md">
+              <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow bg-white/5 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle>Status Financeiro</CardTitle>
                   <CardDescription>
@@ -443,7 +359,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                 </CardContent>
               </Card>
               
-              <Card className="border-primary/20 shadow-md">
+              <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow bg-white/5 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle>Evolução Mensal</CardTitle>
                   <CardDescription>
@@ -473,7 +389,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
           </TabsContent>
           
           <TabsContent value="formapagamento" className="space-y-6">
-            <Card className="border-primary/20 shadow-md">
+            <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow bg-white/5 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle>Valores Recebidos por Forma de Pagamento</CardTitle>
                 <CardDescription>
@@ -533,7 +449,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
           </TabsContent>
           
           <TabsContent value="vencimentos" className="space-y-6">
-            <Card className="border-primary/20 shadow-md">
+            <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow bg-white/5 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle>Próximos Vencimentos</CardTitle>
                 <CardDescription>
@@ -583,7 +499,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
           </TabsContent>
           
           <TabsContent value="detalhada">
-            <Card className="border-primary/20 shadow-md">
+            <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow bg-white/5 backdrop-blur-sm">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle>Relatório Detalhado de Boletos</CardTitle>
