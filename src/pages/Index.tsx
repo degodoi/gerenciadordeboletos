@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { BoletoForm, type Boleto } from "@/components/BoletoForm";
 import { BoletoList } from "@/components/BoletoList";
@@ -8,6 +7,7 @@ import { Plus, BarChart, Banknote, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatarMoeda } from "@/lib/utils";
+import { BackupManager } from "@/components/BackupManager";
 
 interface IndexProps {
   boletos: Boleto[];
@@ -18,7 +18,6 @@ const Index = ({ boletos, onUpdateBoletos }: IndexProps) => {
   const [editingBoleto, setEditingBoleto] = useState<Boleto | null>(null);
   const [showForm, setShowForm] = useState(false);
 
-  // Calcular estatísticas rápidas para os cards de destaque
   const totalReceber = boletos.reduce((acc, boleto) => {
     const parcelasNaoPagas = boleto.parcelasInfo.filter(parcela => !parcela.paga);
     return acc + parcelasNaoPagas.reduce((total, parcela) => total + parcela.valor, 0);
@@ -83,7 +82,6 @@ const Index = ({ boletos, onUpdateBoletos }: IndexProps) => {
     setShowForm(true);
   };
 
-  // Formatar data para exibição
   const formatarData = (data: Date) => {
     return new Date(data).toLocaleDateString('pt-BR');
   };
@@ -117,6 +115,8 @@ const Index = ({ boletos, onUpdateBoletos }: IndexProps) => {
                     Relatórios
                   </Link>
                 </Button>
+                
+                <BackupManager onDataImported={onUpdateBoletos} />
               </>
             )}
           </div>
