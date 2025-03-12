@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { BoletoForm, type Boleto } from "@/components/BoletoForm";
 import { BoletoList } from "@/components/BoletoList";
@@ -122,6 +123,10 @@ const Index = ({ boletos, onUpdateBoletos }: IndexProps) => {
           </div>
         </header>
 
+        {!showForm && boletos.length > 0 && (
+          <Dashboard boletos={boletos} />
+        )}
+
         {!showForm && (
           <div className="grid gap-6 md:grid-cols-2 fade-in">
             <Card className="hover-scale border-primary/20 shadow-md">
@@ -166,10 +171,6 @@ const Index = ({ boletos, onUpdateBoletos }: IndexProps) => {
               </CardContent>
             </Card>
           </div>
-        )}
-
-        {boletos.length > 0 && !showForm && (
-          <Dashboard boletos={boletos} />
         )}
 
         {showForm ? (
