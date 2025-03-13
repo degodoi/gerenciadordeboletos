@@ -363,7 +363,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                             />
                           ))}
                         </Pie>
-                        <Tooltip 
+                        <RechartsTooltip 
                           formatter={(value: number) => formatarMoeda(value)}
                         />
                         <Legend />
@@ -390,7 +390,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
                         <YAxis tickFormatter={(value) => `R$${value/1000}k`} />
-                        <Tooltip formatter={(value: number) => formatarMoeda(value)} />
+                        <RechartsTooltip formatter={(value: number) => formatarMoeda(value)} />
                         <Legend />
                         <Bar dataKey="Recebido" stackId="a" fill="#84cc16" />
                         <Bar dataKey="Pendente" stackId="a" fill="#0ea5e9" />
@@ -420,7 +420,7 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />
                       <YAxis tickFormatter={(value) => `R$${value/1000}k`} />
-                      <Tooltip formatter={(value: number) => formatarMoeda(value)} />
+                      <RechartsTooltip formatter={(value: number) => formatarMoeda(value)} />
                       <Bar dataKey="valor" fill="#e11d48">
                         {dadosPorFormaPagamento.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
