@@ -7,6 +7,20 @@ import { Download, Printer, FileText, Filter, ChevronsUpDown } from "lucide-reac
 import { Filtros } from "@/components/Filtros";
 import { type Boleto } from "@/components/BoletoForm";
 import { formatarMoeda } from "@/lib/utils";
+import { 
+  BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, 
+  Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie 
+} from "recharts";
+import { 
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
+} from "@/components/ui/table";
+import { 
+  DropdownMenu, DropdownMenuContent, DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { 
+  format, isAfter, subMonths 
+} from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface RelatoriosProps {
   boletos: Boleto[];
