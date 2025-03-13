@@ -22,8 +22,17 @@ const App = () => {
   }, []);
 
   const handleUpdateBoletos = (newBoletos: Boleto[]) => {
-    setBoletos(newBoletos);
-    saveBoletos(newBoletos);
+    // Ensure all dates are properly converted to Date objects before saving
+    const processedBoletos = newBoletos.map(boleto => ({
+      ...boleto,
+      parcelasInfo: boleto.parcelasInfo.map(parcela => ({
+        ...parcela,
+        dataVencimento: new Date(parcela.dataVencimento)
+      }))
+    }));
+    
+    setBoletos(processedBoletos);
+    saveBoletos(processedBoletos);
   };
 
   return (

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -74,18 +73,12 @@ export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoL
     if (!boletoToUpdate) return;
     
     // Create a deep copy of the boleto
-    const updatedBoleto = {
-      ...boletoToUpdate,
-      parcelasInfo: [...boletoToUpdate.parcelasInfo]
-    };
+    const updatedBoleto = JSON.parse(JSON.stringify(boletoToUpdate)) as Boleto;
     
-    // Update the specific parcela
-    updatedBoleto.parcelasInfo[parcelaIndex] = {
-      ...updatedBoleto.parcelasInfo[parcelaIndex],
-      dataVencimento: novaData
-    };
+    // Ensure dataVencimento is a Date object (not a string)
+    updatedBoleto.parcelasInfo[parcelaIndex].dataVencimento = novaData;
     
-    // Call the edit function to update the boleto
+    // Call the edit function to update the boleto in the parent component
     onEdit(updatedBoleto);
     
     // Close the dialog and reset state

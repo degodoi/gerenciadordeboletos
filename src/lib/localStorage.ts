@@ -5,7 +5,20 @@ const BOLETOS_STORAGE_KEY = 'cfc-direcao-boletos';
 // Save boletos to local storage
 export const saveBoletos = (boletos: any[]) => {
   try {
-    localStorage.setItem(BOLETOS_STORAGE_KEY, JSON.stringify(boletos));
+    // Ensure dates are properly serialized
+    const boletosToSave = boletos.map(boleto => ({
+      ...boleto,
+      parcelasInfo: boleto.parcelasInfo.map((parcela: any) => ({
+        ...parcela,
+        // Ensure dataVencimento is a Date object before converting to ISO string
+        dataVencimento: parcela.dataVencimento instanceof Date 
+          ? parcela.dataVencimento 
+          : new Date(parcela.dataVencimento)
+      }))
+    }));
+    
+    localStorage.setItem(BOLETOS_STORAGE_KEY, JSON.stringify(boletosToSave));
+    console.log('Boletos salvos com sucesso:', boletosToSave);
   } catch (error) {
     console.error('Error saving to localStorage:', error);
   }
@@ -24,6 +37,8 @@ export const loadBoletos = () => {
         }
         return value;
       });
+      
+      console.log('Boletos carregados com sucesso:', parsed);
       return parsed;
     }
   } catch (error) {
