@@ -11,9 +11,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { addMonths } from "date-fns";
+import { addMonths, format } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface BoletoFormProps {
   onSubmit: (boleto: Boleto) => void;
@@ -37,6 +41,7 @@ export interface Boleto {
   tipoPagamento: string;
   valorParcela: number;
   dataCadastro: Date;
+  dataInicial: Date;
   parcelasInfo: Parcela[];
 }
 
@@ -47,6 +52,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
   const [tipoPagamentoEntrada, setTipoPagamentoEntrada] = useState("");
   const [parcelas, setParcelas] = useState("");
   const [tipoPagamento, setTipoPagamento] = useState("");
+  const [dataInicial, setDataInicial] = useState<Date>(new Date());
 
   useEffect(() => {
     if (initialData) {
@@ -56,6 +62,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
       setTipoPagamentoEntrada(initialData.tipoPagamentoEntrada);
       setParcelas(initialData.parcelas.toString());
       setTipoPagamento(initialData.tipoPagamento);
+      setDataInicial(initialData.dataInicial || new Date());
     } else {
       // Limpar campos quando não houver dados iniciais
       setNome("");
@@ -64,6 +71,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
       setTipoPagamentoEntrada("");
       setParcelas("");
       setTipoPagamento("");
+      setDataInicial(new Date());
     }
   }, [initialData]);
 
@@ -99,7 +107,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
     const parcelasInfo = Array.from({ length: parcelasNum }, (_, index) => ({
       numero: index + 1,
       valor: valorParcela,
-      dataVencimento: addMonths(new Date(), index + 1),
+      dataVencimento: addMonths(dataInicial, index),
       paga: false,
     }));
 
@@ -114,6 +122,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
       tipoPagamento,
       parcelasInfo,
       dataCadastro: initialData?.dataCadastro || new Date(),
+      dataInicial,
     };
 
     onSubmit(novoBoleto);
@@ -129,6 +138,7 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
       setTipoPagamentoEntrada("");
       setParcelas("");
       setTipoPagamento("");
+      setDataInicial(new Date());
     }
   };
 
@@ -219,6 +229,37 @@ export function BoletoForm({ onSubmit, initialData }: BoletoFormProps) {
                   <SelectItem value="boleto">Boleto</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="dataInicial">Data Inicial de Vencimento</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-[180px] justify-start text-left font-normal",
+                      !dataInicial && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dataInicial ? (
+                      format(dataInicial, "dd/MM/yyyy")
+                    ) : (
+                      <span>Selecione a data</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dataInicial}
+                    onSelect={(date) => setDataInicial(date || new Date())}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 

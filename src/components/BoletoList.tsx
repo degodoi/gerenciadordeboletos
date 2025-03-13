@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -10,11 +11,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatarMoeda } from "@/lib/utils";
-import type { Boleto } from "./BoletoForm";
-import { format, isAfter, isBefore, addDays } from "date-fns";
+import type { Boleto, Parcela } from "./BoletoForm";
+import { format, isAfter, isBefore, addDays, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { Edit, Trash2, ChevronDown, ChevronUp, AlertTriangle, Check, Clock } from "lucide-react";
+import { Edit, Trash2, ChevronDown, ChevronUp, AlertTriangle, Check, Clock, Calendar } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -23,6 +24,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 
 interface BoletoListProps {
   boletos: Boleto[];
@@ -33,6 +39,9 @@ interface BoletoListProps {
 
 export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoListProps) {
   const [expandedBoleto, setExpandedBoleto] = useState<string | null>(null);
+  const [editingParcela, setEditingParcela] = useState<{boletoId: string, parcelaIndex: number} | null>(null);
+  const [novaData, setNovaData] = useState<Date>(new Date());
+  const [isDateDialogOpen, setIsDateDialogOpen] = useState(false);
 
   useEffect(() => {
     checkOverduePayments();
@@ -45,6 +54,42 @@ export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoL
   const handleParcelaPaga = (boletoId: string, parcelaIndex: number) => {
     onParcelaPaga(boletoId, parcelaIndex);
     toast.success(`Parcela ${parcelaIndex + 1} atualizada com sucesso!`, {
+      duration: 1000,
+    });
+  };
+
+  const openDateEditor = (boletoId: string, parcelaIndex: number, dataAtual: Date) => {
+    setEditingParcela({ boletoId, parcelaIndex });
+    setNovaData(new Date(dataAtual));
+    setIsDateDialogOpen(true);
+  };
+
+  const updateParcelaDate = () => {
+    if (!editingParcela) return;
+    
+    const { boletoId, parcelaIndex } = editingParcela;
+    const boletoIndex = boletos.findIndex(b => b.id === boletoId);
+    
+    if (boletoIndex === -1) return;
+    
+    const boletosAtualizados = [...boletos];
+    const boleto = { ...boletosAtualizados[boletoIndex] };
+    const parcelasInfo = [...boleto.parcelasInfo];
+    
+    parcelasInfo[parcelaIndex] = {
+      ...parcelasInfo[parcelaIndex],
+      dataVencimento: novaData
+    };
+    
+    boleto.parcelasInfo = parcelasInfo;
+    boletosAtualizados[boletoIndex] = boleto;
+    
+    // Chama o método de edição para salvar a alteração
+    onEdit(boleto);
+    setIsDateDialogOpen(false);
+    setEditingParcela(null);
+    
+    toast.success("Data de vencimento atualizada com sucesso!", {
       duration: 1000,
     });
   };
@@ -222,12 +267,19 @@ export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoL
                                     <span className="font-medium">
                                       Parcela {parcela.numero}
                                     </span>
-                                    <p className="text-sm text-muted-foreground">
-                                      Vencimento:{" "}
-                                      {format(new Date(parcela.dataVencimento), "dd/MM/yyyy", {
+                                    <div className="text-sm text-muted-foreground flex items-center gap-1">
+                                      <span>Vencimento: {format(new Date(parcela.dataVencimento), "dd/MM/yyyy", {
                                         locale: ptBR,
-                                      })}
-                                    </p>
+                                      })}</span>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-5 w-5 rounded-full"
+                                        onClick={() => openDateEditor(boleto.id, index, parcela.dataVencimento)}
+                                      >
+                                        <Calendar className="h-3 w-3" />
+                                      </Button>
+                                    </div>
                                     <p className="text-sm font-medium">
                                       {formatarMoeda(parcela.valor)}
                                     </p>
@@ -268,6 +320,31 @@ export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoL
           </TableBody>
         </Table>
       </CardContent>
+
+      {/* Dialog para edição de data */}
+      <Dialog open={isDateDialogOpen} onOpenChange={setIsDateDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Alterar Data de Vencimento</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            <CalendarComponent
+              mode="single"
+              selected={novaData}
+              onSelect={(date) => setNovaData(date || new Date())}
+              className={cn("p-3 pointer-events-auto")}
+            />
+            <div className="flex gap-4 w-full">
+              <Button onClick={() => setIsDateDialogOpen(false)} variant="outline" className="flex-1">
+                Cancelar
+              </Button>
+              <Button onClick={updateParcelaDate} className="flex-1">
+                Salvar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
