@@ -56,24 +56,26 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
     }
     
     if (formaPagamentoFiltro !== "todos") {
-      filtrados = filtrados.filter(boleto => 
-        boleto.tipoPagamento === formaPagamentoFiltro || 
-        boleto.tipoPagamentoEntrada === formaPagamentoFiltro
-      );
+      filtrados = filtrados.filter(boleto => {
+        const formaPagamentoEntrada = boleto.tipoPagamentoEntrada === formaPagamentoFiltro;
+        const formaPagamentoParcelas = boleto.tipoPagamento === formaPagamentoFiltro;
+        return formaPagamentoEntrada || formaPagamentoParcelas;
+      });
     }
     
     if (statusFiltro !== "todos") {
       if (statusFiltro === "pago") {
         filtrados = filtrados.filter(boleto => 
+          boleto.parcelasInfo.length > 0 && 
           boleto.parcelasInfo.every(parcela => parcela.paga)
         );
       } else if (statusFiltro === "pendente") {
         filtrados = filtrados.filter(boleto => 
-          boleto.parcelasInfo.some(parcela => !parcela.paga && new Date() < parcela.dataVencimento)
+          boleto.parcelasInfo.some(parcela => !parcela.paga && new Date(parcela.dataVencimento) > new Date())
         );
       } else if (statusFiltro === "vencido") {
         filtrados = filtrados.filter(boleto => 
-          boleto.parcelasInfo.some(parcela => !parcela.paga && new Date() > parcela.dataVencimento)
+          boleto.parcelasInfo.some(parcela => !parcela.paga && new Date(parcela.dataVencimento) < new Date())
         );
       }
     }

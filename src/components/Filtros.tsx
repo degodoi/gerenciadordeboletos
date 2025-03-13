@@ -75,7 +75,7 @@ export const Filtros = ({
             <SelectItem value="cartao">Cartão</SelectItem>
             <SelectItem value="pix">PIX</SelectItem>
             <SelectItem value="transferencia">Transferência</SelectItem>
-            <SelectItem value="cheque">Cheque</SelectItem>
+            <SelectItem value="boleto">Boleto</SelectItem>
           </SelectContent>
         </Select>
       </div>
