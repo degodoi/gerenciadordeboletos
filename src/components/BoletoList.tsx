@@ -24,7 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
@@ -68,24 +68,27 @@ export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoL
     if (!editingParcela) return;
     
     const { boletoId, parcelaIndex } = editingParcela;
-    const boletoIndex = boletos.findIndex(b => b.id === boletoId);
     
-    if (boletoIndex === -1) return;
+    // Find the boleto in the array
+    const boletoToUpdate = boletos.find(b => b.id === boletoId);
+    if (!boletoToUpdate) return;
     
-    const boletosAtualizados = [...boletos];
-    const boleto = { ...boletosAtualizados[boletoIndex] };
-    const parcelasInfo = [...boleto.parcelasInfo];
+    // Create a deep copy of the boleto
+    const updatedBoleto = {
+      ...boletoToUpdate,
+      parcelasInfo: [...boletoToUpdate.parcelasInfo]
+    };
     
-    parcelasInfo[parcelaIndex] = {
-      ...parcelasInfo[parcelaIndex],
+    // Update the specific parcela
+    updatedBoleto.parcelasInfo[parcelaIndex] = {
+      ...updatedBoleto.parcelasInfo[parcelaIndex],
       dataVencimento: novaData
     };
     
-    boleto.parcelasInfo = parcelasInfo;
-    boletosAtualizados[boletoIndex] = boleto;
+    // Call the edit function to update the boleto
+    onEdit(updatedBoleto);
     
-    // Chama o método de edição para salvar a alteração
-    onEdit(boleto);
+    // Close the dialog and reset state
     setIsDateDialogOpen(false);
     setEditingParcela(null);
     
@@ -326,6 +329,9 @@ export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoL
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Alterar Data de Vencimento</DialogTitle>
+            <DialogDescription>
+              Selecione a nova data de vencimento para esta parcela.
+            </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-4">
             <CalendarComponent
