@@ -25,6 +25,8 @@ const App = () => {
     // Ensure all dates are properly converted to Date objects before saving
     const processedBoletos = newBoletos.map(boleto => ({
       ...boleto,
+      dataInicial: new Date(boleto.dataInicial),
+      dataCadastro: new Date(boleto.dataCadastro),
       parcelasInfo: boleto.parcelasInfo.map(parcela => ({
         ...parcela,
         dataVencimento: new Date(parcela.dataVencimento)

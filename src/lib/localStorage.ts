@@ -1,26 +1,27 @@
+
 // Local storage keys
 const BOLETOS_STORAGE_KEY = 'cfc-direcao-boletos';
 
 // Save boletos to local storage
 export const saveBoletos = (boletos: any[]) => {
   try {
-    // Ensure dates are properly serialized
-    const boletosToSave = boletos.map(boleto => ({
-      ...boleto,
-      dataInicial: boleto.dataInicial instanceof Date 
-        ? boleto.dataInicial 
-        : new Date(boleto.dataInicial),
-      dataCadastro: boleto.dataCadastro instanceof Date 
-        ? boleto.dataCadastro 
-        : new Date(boleto.dataCadastro),
-      parcelasInfo: boleto.parcelasInfo.map((parcela: any) => ({
-        ...parcela,
-        // Ensure dataVencimento is a Date object before storing
-        dataVencimento: parcela.dataVencimento instanceof Date 
-          ? parcela.dataVencimento 
-          : new Date(parcela.dataVencimento)
-      }))
-    }));
+    // Ensure all dates are properly serialized
+    const boletosToSave = boletos.map(boleto => {
+      // Create a deep copy to avoid reference issues
+      const boletoToSave = {
+        ...boleto,
+        // Always create new Date objects from existing dates
+        dataInicial: new Date(boleto.dataInicial),
+        dataCadastro: new Date(boleto.dataCadastro),
+        parcelasInfo: boleto.parcelasInfo.map((parcela: any) => ({
+          ...parcela,
+          // Create a new Date object for each dataVencimento
+          dataVencimento: new Date(parcela.dataVencimento)
+        }))
+      };
+      
+      return boletoToSave;
+    });
     
     localStorage.setItem(BOLETOS_STORAGE_KEY, JSON.stringify(boletosToSave));
     console.log('Boletos salvos com sucesso:', boletosToSave);
@@ -43,8 +44,19 @@ export const loadBoletos = () => {
         return value;
       });
       
-      console.log('Boletos carregados com sucesso:', parsed);
-      return parsed;
+      // Further ensure all dates are Date objects
+      const boletosWithDates = parsed.map((boleto: any) => ({
+        ...boleto,
+        dataInicial: new Date(boleto.dataInicial),
+        dataCadastro: new Date(boleto.dataCadastro),
+        parcelasInfo: boleto.parcelasInfo.map((parcela: any) => ({
+          ...parcela,
+          dataVencimento: new Date(parcela.dataVencimento)
+        }))
+      }));
+      
+      console.log('Boletos carregados com sucesso:', boletosWithDates);
+      return boletosWithDates;
     }
   } catch (error) {
     console.error('Error loading from localStorage:', error);
@@ -102,9 +114,20 @@ export const importData = (file: File): Promise<any[]> => {
           throw new Error('Formato de arquivo inválido');
         }
         
+        // Ensure all dates are properly converted
+        const processedData = parsedData.map((boleto: any) => ({
+          ...boleto,
+          dataInicial: new Date(boleto.dataInicial),
+          dataCadastro: new Date(boleto.dataCadastro),
+          parcelasInfo: boleto.parcelasInfo.map((parcela: any) => ({
+            ...parcela,
+            dataVencimento: new Date(parcela.dataVencimento)
+          }))
+        }));
+        
         // Save to localStorage
-        saveBoletos(parsedData);
-        resolve(parsedData);
+        saveBoletos(processedData);
+        resolve(processedData);
       } catch (error) {
         reject(error);
       }

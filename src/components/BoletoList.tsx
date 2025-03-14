@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -59,7 +58,6 @@ export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoL
 
   const openDateEditor = (boletoId: string, parcelaIndex: number, dataAtual: Date) => {
     setEditingParcela({ boletoId, parcelaIndex });
-    // Make sure to create a new Date instance to avoid reference issues
     setNovaData(new Date(dataAtual));
     setIsDateDialogOpen(true);
   };
@@ -69,7 +67,6 @@ export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoL
     
     const { boletoId, parcelaIndex } = editingParcela;
     
-    // Find the boleto in the array
     const boletoToUpdate = boletos.find(b => b.id === boletoId);
     if (!boletoToUpdate) return;
     
@@ -80,9 +77,10 @@ export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoL
       newDate: novaData
     });
     
-    // Create a proper deep copy of the boleto with correct date conversions
     const updatedBoleto = {
       ...boletoToUpdate,
+      dataInicial: new Date(boletoToUpdate.dataInicial),
+      dataCadastro: new Date(boletoToUpdate.dataCadastro),
       parcelasInfo: boletoToUpdate.parcelasInfo.map((parcela, idx) => {
         if (idx === parcelaIndex) {
           return {
@@ -99,15 +97,13 @@ export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoL
     
     console.log("Updated boleto:", updatedBoleto);
     
-    // Call the edit function to update the boleto in the parent component
     onEdit(updatedBoleto);
     
-    // Close the dialog and reset state
     setIsDateDialogOpen(false);
     setEditingParcela(null);
     
     toast.success("Data de vencimento atualizada com sucesso!", {
-      duration: 1000,
+      duration: 2000,
     });
   };
 
@@ -338,7 +334,6 @@ export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoL
         </Table>
       </CardContent>
 
-      {/* Dialog para edição de data */}
       <Dialog open={isDateDialogOpen} onOpenChange={setIsDateDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

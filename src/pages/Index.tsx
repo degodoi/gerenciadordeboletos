@@ -62,7 +62,12 @@ const Index = ({ boletos, onUpdateBoletos }: IndexProps) => {
           ...novasParcelasInfo[parcelaIndex],
           paga: !novasParcelasInfo[parcelaIndex].paga,
         };
-        return { ...boleto, parcelasInfo: novasParcelasInfo };
+        return { 
+          ...boleto, 
+          parcelasInfo: novasParcelasInfo,
+          dataInicial: new Date(boleto.dataInicial),
+          dataCadastro: new Date(boleto.dataCadastro)
+        };
       }
       return boleto;
     });
@@ -73,7 +78,6 @@ const Index = ({ boletos, onUpdateBoletos }: IndexProps) => {
   const handleEdit = (boleto: Boleto) => {
     console.log("Editando boleto:", boleto);
     
-    // Ensure all dates are properly Date objects
     const boletoWithDates = {
       ...boleto,
       dataInicial: new Date(boleto.dataInicial),
@@ -85,10 +89,8 @@ const Index = ({ boletos, onUpdateBoletos }: IndexProps) => {
     };
     
     if (showForm) {
-      // If we're already showing the form, update it directly
       setEditingBoleto(boletoWithDates);
     } else {
-      // If form is not showing, show it with the boleto to edit
       setEditingBoleto(boletoWithDates);
       setShowForm(true);
     }
@@ -107,7 +109,6 @@ const Index = ({ boletos, onUpdateBoletos }: IndexProps) => {
     return new Date(data).toLocaleDateString('pt-BR');
   };
 
-  // Filtra os boletos com base no termo de busca
   const boletosFiltrados = boletos.filter(boleto => 
     boleto.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -239,7 +240,9 @@ const Index = ({ boletos, onUpdateBoletos }: IndexProps) => {
             )}
             
             <BoletoList 
-              boletos={!showForm ? boletosFiltrados : boletos} 
+              boletos={!showForm ? boletos.filter(boleto => 
+                boleto.nome.toLowerCase().includes(searchTerm.toLowerCase())
+              ) : boletos} 
               onParcelaPaga={handleParcelaPaga} 
               onEdit={handleEdit}
               onDelete={handleDelete}
