@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -23,11 +24,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
 
 interface BoletoListProps {
   boletos: Boleto[];
@@ -59,6 +59,7 @@ export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoL
 
   const openDateEditor = (boletoId: string, parcelaIndex: number, dataAtual: Date) => {
     setEditingParcela({ boletoId, parcelaIndex });
+    // Make sure to create a new Date instance to avoid reference issues
     setNovaData(new Date(dataAtual));
     setIsDateDialogOpen(true);
   };
@@ -72,11 +73,31 @@ export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoL
     const boletoToUpdate = boletos.find(b => b.id === boletoId);
     if (!boletoToUpdate) return;
     
-    // Create a deep copy of the boleto
-    const updatedBoleto = JSON.parse(JSON.stringify(boletoToUpdate)) as Boleto;
+    console.log("Updating parcela date:", {
+      boletoId,
+      parcelaIndex,
+      currentDate: boletoToUpdate.parcelasInfo[parcelaIndex].dataVencimento,
+      newDate: novaData
+    });
     
-    // Ensure dataVencimento is a Date object (not a string)
-    updatedBoleto.parcelasInfo[parcelaIndex].dataVencimento = novaData;
+    // Create a proper deep copy of the boleto with correct date conversions
+    const updatedBoleto = {
+      ...boletoToUpdate,
+      parcelasInfo: boletoToUpdate.parcelasInfo.map((parcela, idx) => {
+        if (idx === parcelaIndex) {
+          return {
+            ...parcela,
+            dataVencimento: new Date(novaData)
+          };
+        }
+        return {
+          ...parcela,
+          dataVencimento: new Date(parcela.dataVencimento)
+        };
+      })
+    };
+    
+    console.log("Updated boleto:", updatedBoleto);
     
     // Call the edit function to update the boleto in the parent component
     onEdit(updatedBoleto);
@@ -330,18 +351,18 @@ export function BoletoList({ boletos, onParcelaPaga, onEdit, onDelete }: BoletoL
             <CalendarComponent
               mode="single"
               selected={novaData}
-              onSelect={(date) => setNovaData(date || new Date())}
+              onSelect={(date) => date && setNovaData(date)}
               className={cn("p-3 pointer-events-auto")}
             />
-            <div className="flex gap-4 w-full">
-              <Button onClick={() => setIsDateDialogOpen(false)} variant="outline" className="flex-1">
-                Cancelar
-              </Button>
-              <Button onClick={updateParcelaDate} className="flex-1">
-                Salvar
-              </Button>
-            </div>
           </div>
+          <DialogFooter>
+            <Button onClick={() => setIsDateDialogOpen(false)} variant="outline" className="w-full sm:w-auto">
+              Cancelar
+            </Button>
+            <Button onClick={updateParcelaDate} className="w-full sm:w-auto">
+              Salvar Alteração
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Card>

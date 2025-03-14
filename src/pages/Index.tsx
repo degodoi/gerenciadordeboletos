@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { BoletoForm, type Boleto } from "@/components/BoletoForm";
 import { BoletoList } from "@/components/BoletoList";
@@ -72,8 +71,27 @@ const Index = ({ boletos, onUpdateBoletos }: IndexProps) => {
   };
 
   const handleEdit = (boleto: Boleto) => {
-    setEditingBoleto(boleto);
-    setShowForm(true);
+    console.log("Editando boleto:", boleto);
+    
+    // Ensure all dates are properly Date objects
+    const boletoWithDates = {
+      ...boleto,
+      dataInicial: new Date(boleto.dataInicial),
+      dataCadastro: new Date(boleto.dataCadastro),
+      parcelasInfo: boleto.parcelasInfo.map(parcela => ({
+        ...parcela,
+        dataVencimento: new Date(parcela.dataVencimento)
+      }))
+    };
+    
+    if (showForm) {
+      // If we're already showing the form, update it directly
+      setEditingBoleto(boletoWithDates);
+    } else {
+      // If form is not showing, show it with the boleto to edit
+      setEditingBoleto(boletoWithDates);
+      setShowForm(true);
+    }
   };
 
   const handleDelete = (boletoId: string) => {

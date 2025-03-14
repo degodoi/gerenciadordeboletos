@@ -1,4 +1,3 @@
-
 // Local storage keys
 const BOLETOS_STORAGE_KEY = 'cfc-direcao-boletos';
 
@@ -8,9 +7,15 @@ export const saveBoletos = (boletos: any[]) => {
     // Ensure dates are properly serialized
     const boletosToSave = boletos.map(boleto => ({
       ...boleto,
+      dataInicial: boleto.dataInicial instanceof Date 
+        ? boleto.dataInicial 
+        : new Date(boleto.dataInicial),
+      dataCadastro: boleto.dataCadastro instanceof Date 
+        ? boleto.dataCadastro 
+        : new Date(boleto.dataCadastro),
       parcelasInfo: boleto.parcelasInfo.map((parcela: any) => ({
         ...parcela,
-        // Ensure dataVencimento is a Date object before converting to ISO string
+        // Ensure dataVencimento is a Date object before storing
         dataVencimento: parcela.dataVencimento instanceof Date 
           ? parcela.dataVencimento 
           : new Date(parcela.dataVencimento)
@@ -32,7 +37,7 @@ export const loadBoletos = () => {
       // Parse dates from JSON
       const parsed = JSON.parse(storedBoletos, (key, value) => {
         // Convert date strings back to Date objects
-        if (key === 'dataVencimento' || key === 'dataCadastro') {
+        if (key === 'dataVencimento' || key === 'dataCadastro' || key === 'dataInicial') {
           return new Date(value);
         }
         return value;
@@ -86,7 +91,7 @@ export const importData = (file: File): Promise<any[]> => {
         
         const parsedData = JSON.parse(event.target.result as string, (key, value) => {
           // Convert date strings back to Date objects
-          if (key === 'dataVencimento' || key === 'dataCadastro') {
+          if (key === 'dataVencimento' || key === 'dataCadastro' || key === 'dataInicial') {
             return new Date(value);
           }
           return value;
