@@ -53,9 +53,9 @@ export const Filtros = ({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os status</SelectItem>
-            <SelectItem value="pago">Pagos</SelectItem>
-            <SelectItem value="pendente">Pendentes</SelectItem>
-            <SelectItem value="vencido">Vencidos</SelectItem>
+            <SelectItem value="pago">Com parcelas pagas</SelectItem>
+            <SelectItem value="pendente">Com parcelas pendentes</SelectItem>
+            <SelectItem value="vencido">Com parcelas vencidas</SelectItem>
           </SelectContent>
         </Select>
       </div>

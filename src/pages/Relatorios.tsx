@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,9 +66,9 @@ const Relatorios = ({ boletos }: RelatoriosProps) => {
     
     if (statusFiltro !== "todos") {
       if (statusFiltro === "pago") {
+        // Alterando a lógica para considerar boletos com pelo menos uma parcela paga
         filtrados = filtrados.filter(boleto => 
-          boleto.parcelasInfo.length > 0 && 
-          boleto.parcelasInfo.every(parcela => parcela.paga)
+          boleto.parcelasInfo.some(parcela => parcela.paga)
         );
       } else if (statusFiltro === "pendente") {
         filtrados = filtrados.filter(boleto => 
